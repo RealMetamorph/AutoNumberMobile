@@ -40,6 +40,7 @@ import android.widget.Toast;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
@@ -178,8 +179,8 @@ public class CameraActivity extends AppCompatActivity {
                     OutputStream outputStream = null;
                     try {
                         Log.i("answer", Arrays.toString(bytes));
-                        //outputStream = new FileOutputStream(file);
-                        //outputStream.write(bytes);
+                        outputStream = new FileOutputStream(file);
+                        outputStream.write(bytes);
                     } finally {
                         if (outputStream != null)
                             outputStream.close();
