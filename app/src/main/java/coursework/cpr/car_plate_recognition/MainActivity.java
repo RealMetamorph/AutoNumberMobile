@@ -21,8 +21,6 @@ public class MainActivity extends AppCompatActivity {
     // Used to load the 'native-lib' library on application startup.
     static {
         System.loadLibrary("native-lib");
-    }
-    static {
         System.loadLibrary("opencv_java3");
     }
     private Button button;
