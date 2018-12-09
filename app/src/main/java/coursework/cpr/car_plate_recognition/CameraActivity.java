@@ -113,7 +113,7 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
             }
         }
 
-        cascadeClassifier.detectMultiScale(grayFrame, plates, 1.8, 6, 0 | Objdetect.CASCADE_SCALE_IMAGE, new org.opencv.core.Size(absolutePlateSize, absolutePlateSize));
+        cascadeClassifier.detectMultiScale(grayFrame, plates, 1.8, 6, Objdetect.CASCADE_SCALE_IMAGE, new org.opencv.core.Size(absolutePlateSize, absolutePlateSize));
         //Рисуем квадратики,ееей!
         Rect[] platesArray = plates.toArray();
         for (int i = 0; i < platesArray.length; i++)
