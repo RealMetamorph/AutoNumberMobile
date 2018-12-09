@@ -4,4 +4,7 @@
       android:versionCode="3430"
       android:versionName="3.4.3">
 
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.hardware.camera2.full"/>
+
 </manifest>

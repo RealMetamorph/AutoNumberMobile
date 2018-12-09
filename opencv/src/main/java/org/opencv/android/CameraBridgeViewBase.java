@@ -14,11 +14,14 @@ import android.content.DialogInterface;
 import android.content.res.TypedArray;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
+import android.graphics.Matrix;
 import android.graphics.Rect;
 import android.util.AttributeSet;
 import android.util.Log;
+import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
+import android.view.WindowManager;
 
 /**
  * This is a basic class, implementing the interaction with Camera and OpenCV library.
@@ -33,6 +36,7 @@ public abstract class CameraBridgeViewBase extends SurfaceView implements Surfac
     private static final int MAX_UNSPECIFIED = -1;
     private static final int STOPPED = 0;
     private static final int STARTED = 1;
+    private static WindowManager windowManager;
 
     private int mState = STOPPED;
     private Bitmap mCacheBitmap;
@@ -62,11 +66,11 @@ public abstract class CameraBridgeViewBase extends SurfaceView implements Surfac
         getHolder().addCallback(this);
         mMaxWidth = MAX_UNSPECIFIED;
         mMaxHeight = MAX_UNSPECIFIED;
+        windowManager = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
     }
 
     public CameraBridgeViewBase(Context context, AttributeSet attrs) {
         super(context, attrs);
-
         int count = attrs.getAttributeCount();
         Log.d(TAG, "Attr count: " + Integer.valueOf(count));
 
@@ -79,6 +83,7 @@ public abstract class CameraBridgeViewBase extends SurfaceView implements Surfac
         getHolder().addCallback(this);
         mMaxWidth = MAX_UNSPECIFIED;
         mMaxHeight = MAX_UNSPECIFIED;
+        windowManager = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
         styledAttrs.recycle();
     }
 
@@ -341,7 +346,7 @@ public abstract class CameraBridgeViewBase extends SurfaceView implements Surfac
         case STOPPED:
             onExitStoppedState();
             break;
-        };
+        }
     }
 
     private void onEnterStoppedState() {
@@ -398,7 +403,7 @@ public abstract class CameraBridgeViewBase extends SurfaceView implements Surfac
         if (modified != null) {
             try {
                 Utils.matToBitmap(modified, mCacheBitmap);
-            } catch(Exception e) {
+            } catch (Exception e) {
                 Log.e(TAG, "Mat type: " + modified);
                 Log.e(TAG, "Bitmap type: " + mCacheBitmap.getWidth() + "*" + mCacheBitmap.getHeight());
                 Log.e(TAG, "Utils.matToBitmap() throws an exception: " + e.getMessage());
@@ -410,22 +415,43 @@ public abstract class CameraBridgeViewBase extends SurfaceView implements Surfac
             Canvas canvas = getHolder().lockCanvas();
             if (canvas != null) {
                 canvas.drawColor(0, android.graphics.PorterDuff.Mode.CLEAR);
-                if (BuildConfig.DEBUG)
-                    Log.d(TAG, "mStretch value: " + mScale);
+                int rotation = windowManager.getDefaultDisplay().getRotation();
+                int degrees = 0;
+                switch (rotation) {
+                    case Surface.ROTATION_0:
+                        degrees = 90;
+                        break;
+                    case Surface.ROTATION_90:
+                        degrees = 0;
+                        break;
+                    case Surface.ROTATION_180:
+                        degrees = 270;
+                        break;
+                    case Surface.ROTATION_270:
+                        degrees = 180;
+                        break;
+                }
+
+                Matrix matrix = new Matrix();
+                matrix.postRotate(degrees);
+                Bitmap outputBitmap = Bitmap.createBitmap(mCacheBitmap, 0, 0, mCacheBitmap.getWidth(), mCacheBitmap.getHeight(), matrix, true);
+
+                if (outputBitmap.getWidth() <= canvas.getWidth()) {
+                   mScale = getRatio(outputBitmap.getWidth(), outputBitmap.getHeight(), canvas.getWidth(), canvas.getHeight());
+                    //mScale = getRatio(canvas.getWidth(), canvas.getHeight(), outputBitmap.getWidth(), outputBitmap.getHeight());
+
+                } else {
+                    mScale = getRatio(canvas.getWidth(), canvas.getHeight(), outputBitmap.getWidth(), outputBitmap.getHeight());
+                  //  mScale = getRatio(outputBitmap.getWidth(), outputBitmap.getHeight(), canvas.getWidth(), canvas.getHeight());
+
+                }
 
                 if (mScale != 0) {
-                    canvas.drawBitmap(mCacheBitmap, new Rect(0,0,mCacheBitmap.getWidth(), mCacheBitmap.getHeight()),
-                         new Rect((int)((canvas.getWidth() - mScale*mCacheBitmap.getWidth()) / 2),
-                         (int)((canvas.getHeight() - mScale*mCacheBitmap.getHeight()) / 2),
-                         (int)((canvas.getWidth() - mScale*mCacheBitmap.getWidth()) / 2 + mScale*mCacheBitmap.getWidth()),
-                         (int)((canvas.getHeight() - mScale*mCacheBitmap.getHeight()) / 2 + mScale*mCacheBitmap.getHeight())), null);
-                } else {
-                     canvas.drawBitmap(mCacheBitmap, new Rect(0,0,mCacheBitmap.getWidth(), mCacheBitmap.getHeight()),
-                         new Rect((canvas.getWidth() - mCacheBitmap.getWidth()) / 2,
-                         (canvas.getHeight() - mCacheBitmap.getHeight()) / 2,
-                         (canvas.getWidth() - mCacheBitmap.getWidth()) / 2 + mCacheBitmap.getWidth(),
-                         (canvas.getHeight() - mCacheBitmap.getHeight()) / 2 + mCacheBitmap.getHeight()), null);
+                    canvas.scale(mScale, mScale, 0, 0);
                 }
+                Log.d(TAG, "mStretch value: " + mScale);
+
+                canvas.drawBitmap(outputBitmap, 0, 0, null);
 
                 if (mFpsMeter != null) {
                     mFpsMeter.measure();
@@ -492,4 +518,11 @@ public abstract class CameraBridgeViewBase extends SurfaceView implements Surfac
 
         return new Size(calcWidth, calcHeight);
     }
+
+    private float getRatio(int widthSource, int heightSource, int widthTarget, int heightTarget) {
+        if (widthTarget <= heightTarget) {
+            return (float) heightTarget / (float) heightSource;
+        } else {
+            return (float) widthTarget / (float) widthSource;
+        }}
 }

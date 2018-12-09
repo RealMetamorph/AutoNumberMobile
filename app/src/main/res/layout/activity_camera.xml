@@ -2,16 +2,19 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    xmlns:opencv="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".CameraActivity">
 
 
-    <TextureView
-        android:id="@+id/textureView"
+    <org.opencv.android.JavaCameraView
+        android:id="@+id/camera2View"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_above="@+id/btnCapture"
+        android:visibility="gone"
+        opencv:camera_id="any"
         />
 
     <Button

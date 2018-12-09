@@ -19,6 +19,7 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.util.AttributeSet;
 import android.util.Log;
+import android.util.Size;
 import android.view.Surface;
 import android.view.ViewGroup.LayoutParams;
 
@@ -145,6 +146,7 @@ public class JavaCamera2View extends CameraBridgeViewBase {
     };
 
     private void createCameraPreviewSession() {
+
         final int w = mPreviewSize.getWidth(), h = mPreviewSize.getHeight();
         Log.i(LOGTAG, "createCameraPreviewSession(" + w + "x" + h + ")");
         if (w < 0 || h < 0)
