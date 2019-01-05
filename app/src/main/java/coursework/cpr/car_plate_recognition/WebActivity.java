@@ -1,8 +1,8 @@
 package coursework.cpr.car_plate_recognition;
 
 import android.content.Intent;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -19,7 +19,7 @@ public class WebActivity extends AppCompatActivity {
         webSettings.setJavaScriptEnabled(true);
         webSettings.setJavaScriptCanOpenWindowsAutomatically(true);
         Intent intent = getIntent();
-        myWebView.loadUrl("https://avtocod.ru/proverkaavto/" + intent.getStringExtra("carNumber") + "?rd=GRZ");
+        myWebView.loadUrl(intent.getStringExtra("href"));
     }
 }
 

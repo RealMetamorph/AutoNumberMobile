@@ -21,6 +21,7 @@ public class MainActivity extends AppCompatActivity {
         System.loadLibrary("opencv_java3");
         System.loadLibrary("tess");
     }
+
     private Button button;
 
     @Override
@@ -37,9 +38,9 @@ public class MainActivity extends AppCompatActivity {
         }
 
 
-      //  TextView tv = (TextView) findViewById(R.id.sample_text);
-      //  tv.setText(stringFromJNI());
-        button = (Button)findViewById(R.id.button);
+        //  TextView tv = (TextView) findViewById(R.id.sample_text);
+        //  tv.setText(stringFromJNI());
+        button = (Button) findViewById(R.id.button);
         button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -47,15 +48,15 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        button = (Button)findViewById(R.id.web_btn);
+        button = (Button) findViewById(R.id.web_btn);
         button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-               startWebActivity();
+                startWebActivity();
             }
         });
 
-        }
+    }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -80,13 +81,16 @@ public class MainActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
-    public void startCameraActivity(){
+    public void startCameraActivity() {
         Intent intent = new Intent(this, CameraActivity.class);
-        startActivity(intent);}
-    public void startWebActivity(){
+        startActivity(intent);
+    }
+
+    public void startWebActivity() {
         Intent intent = new Intent(this, WebActivity.class);
         intent.putExtra("carNumber", "M052ET63");
-        startActivity(intent);}
+        startActivity(intent);
+    }
 
     /**
      * A native method that is implemented by the 'native-lib' native library,

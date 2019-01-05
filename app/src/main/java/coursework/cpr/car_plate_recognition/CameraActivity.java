@@ -1,17 +1,32 @@
 package coursework.cpr.car_plate_recognition;
 
 import android.content.Context;
+import android.content.Intent;
 import android.os.Bundle;
+import android.os.Environment;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.view.MotionEvent;
 import android.view.SurfaceView;
+import android.view.View;
 import android.widget.Button;
+
+import com.googlecode.leptonica.android.Binarize;
+import com.googlecode.leptonica.android.Box;
+import com.googlecode.leptonica.android.Clip;
+import com.googlecode.leptonica.android.Convert;
+import com.googlecode.leptonica.android.Pix;
+import com.googlecode.leptonica.android.ReadFile;
+import com.googlecode.leptonica.android.WriteFile;
+import com.googlecode.tesseract.android.TessBaseAPI;
 
 import org.opencv.android.CameraBridgeViewBase;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfRect;
+import org.opencv.core.Point;
 import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
+import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.objdetect.CascadeClassifier;
 import org.opencv.objdetect.Objdetect;
@@ -26,9 +41,14 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
     private int absolutePlateSize;
     private Button btnCapture;
     private CameraBridgeViewBase cameraBridgeViewBase;
+    private TessBaseAPI tesseract;
     private MatOfRect plates;
+    private Mat lastFrame;
     private int currentFrame;
     private int maxFrame = 3;
+    private int camHeight;
+    private int camWidth;
+    private CameraActivity self;
 
     //Save to FILE
     private CascadeClassifier cascadeClassifier;
@@ -37,11 +57,456 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         this.setContentView(R.layout.activity_camera);
+        self = this;
         cameraBridgeViewBase = findViewById(R.id.camera2View);
         cameraBridgeViewBase.setVisibility(SurfaceView.VISIBLE);
         cameraBridgeViewBase.setCvCameraViewListener(this);
+        cameraBridgeViewBase.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                int viewHeight = v.getHeight();
+                int viewWidth = v.getWidth();
+                double x = convertor(event.getY(), 0, 0.95 * viewHeight, 0, camWidth);
+                double y = camHeight - convertor(event.getX(), 0, viewWidth, 0, camHeight);
+                System.out.println("X=" + x);
+                System.out.println("Y=" + y);
+                if (plates == null)
+                    return false;
+                Rect[] platesArray = plates.toArray();
+                for (Rect rect : platesArray) {
+                    System.out.println(rect.x + "**" + rect.y + "**" + rect.width + "**" + rect.height);
+                    if (rect.contains(new Point(x, y))) {
+                        System.out.println("CONTAINS!!!");
+                        Mat findRect = lastFrame.submat(rect);
+
+                        File imageDirDebug = Environment.getExternalStorageDirectory();
+                        //noinspection ResultOfMethodCallIgnored
+                        new File(imageDirDebug, "CarPlateRecognition").mkdir();
+                        File imageFileDebug = new File(imageDirDebug, "CarPlateRecognition/beforeImage.png");
+                        Imgcodecs.imwrite(imageFileDebug.getAbsolutePath(), findRect);
+
+                        File imageDir = getDir("imageToOCR", Context.MODE_PRIVATE);
+                        File imageFile = new File(imageDir, "image.png");
+                        Imgcodecs.imwrite(imageFile.getAbsolutePath(), findRect);
+
+                        Pix pix = ReadFile.readFile(imageFile);
+                        pix = Convert.convertTo8(pix);
+                        pix = Binarize.otsuAdaptiveThreshold(pix, pix.getWidth(), pix.getHeight(), 2, 1, 0.01f);
+                        imageFileDebug = new File(imageDirDebug, "CarPlateRecognition/binariesImage.png");
+                        WriteFile.writeImpliedFormat(pix, imageFileDebug);
+
+                        String result = OCR(pix);
+                        System.out.println("Result recognition: " + result);
+                        Intent intent = new Intent(self, WebActivity.class);
+                        intent.putExtra("href", "https://avtocod.ru/proverkaavto/" + result + "?rd=GRZ");
+                        startActivity(intent);
+                    }
+                }
+                return true;
+            }
+        });
         //cameraBridgeViewBase.setRotation(180);
+        tesseract = new TessBaseAPI();
         initializeOpenCVDependencies();
+        initializeTessAPIBase();
+    }
+
+    private String checkSymbol(String symbol1) {
+        if (symbol1.isEmpty())
+            return "";
+        symbol1 = symbol1.toUpperCase();
+        for (int i = 0; i < symbol1.length(); i++) {
+            char sym = symbol1.charAt(i);
+            String symbol = symbol1.substring(i, i + 1);
+            if (symbol.equals("А") || symbol.equals("В") || symbol.equals("С") || symbol.equals("Е") || symbol.equals("Н") || symbol.equals("К")
+                    || symbol.equals("М") || symbol.equals("О") || symbol.equals("Р") || symbol.equals("Т") || symbol.equals("Х") || symbol.equals("У")
+                    || (sym >= '0' && sym <= '9'))
+                return symbol;
+        }
+        return "";
+    }
+
+    //OCR
+    private String OCR(Pix origImage) {
+
+        Pix work = origImage.clone();
+
+        int width = work.getWidth();
+        int height = work.getHeight();
+
+        int maxX = 0;
+        int maxY = 0;
+        boolean set = false;
+
+        //Проверенные точки
+        boolean[][] checkedPoint = new boolean[height][width];
+
+        StringBuilder stringBuilder = new StringBuilder();
+
+        //Зонированная обработка
+        for (int i = height / 2; i < height; i++) {
+            for (int j = 0; j < width; j++) {
+                if (!checkedPoint[i][j] && work.getPixel(j, i) == -1) {
+                    checkedPoint[i][j] = true;
+
+                    //Черные пиксели найденной зоны
+                    boolean[][] ourBlack = new boolean[height][width];
+                    ourBlack[i][j] = true;
+
+                    //Нахождение пикселей, принадлежащих зоне.
+                    int direction = 1;
+                    int minH = i;
+                    int maxH = i;
+                    int minW = j;
+                    int maxW = j;
+                    int blackCount = 1;
+                    boolean second = false;
+                    //Обработка строки, где найден первй пиксель.
+                    for (int l = j + 1; l < width; l += direction) {
+                        if (!checkedPoint[i][l] && ((l > 0 && ourBlack[i][l - 1]) || (l < width - 1 && ourBlack[i][l + 1]))) {
+                            if (work.getPixel(l, i) == -1) {
+                                ourBlack[i][l] = true;
+                                minW = Math.min(minW, l);
+                                maxW = Math.max(maxW, l);
+                                blackCount++;
+                                checkedPoint[i][l] = true;
+                            }
+                        }
+                        if (!second && l == width - 1) {
+                            direction = -1;
+                            second = true;
+                        } else if (second && l == 0) {
+                            break;
+                        }
+                    }
+                    boolean has = false;
+                    boolean has2 = false;
+                    boolean second2 = false;
+                    int direction2 = 1;
+
+                    //Поиск других строк
+                    for (int k = i + 1; k < height; k += direction2) {
+                        second = false;
+                        direction = 1;
+                        for (int l = 0; l < width; l += direction) {
+
+                            if (!checkedPoint[k][l] && ((l > 0 && ourBlack[k][l - 1]) || (l < width - 1 && ourBlack[k][l + 1]) || (k > 0 && ourBlack[k - 1][l]) || (l > 0 && k > 0 && ourBlack[k - 1][l - 1]) || (l < width - 1 && k > 0 && ourBlack[k - 1][l + 1]) || (k < height - 1 && ourBlack[k + 1][l]) || (l > 0 && k < height - 1 && ourBlack[k + 1][l - 1]) || (l < width - 1 && k < height - 1 && ourBlack[k + 1][l + 1]))) {
+                                if (work.getPixel(l, k) == -1) {
+                                    ourBlack[k][l] = true;
+                                    minW = Math.min(minW, l);
+                                    maxW = Math.max(maxW, l);
+                                    maxH = Math.max(maxH, k);
+                                    minH = Math.min(minH, k);
+                                    has = true;
+                                    has2 = true;
+                                    blackCount++;
+                                    checkedPoint[k][l] = true;
+                                }
+                            }
+                            if (!second && l == width - 1) {
+                                direction = -1;
+                                second = true;
+                                has = false;
+                            } else if (second && l == 0) {
+                                if (has) {
+                                    second = false;
+                                    direction = 1;
+                                    has = false;
+                                } else
+                                    break;
+                            }
+                        }
+                        if (!second2 && k == height - 1) {
+                            direction2 = -1;
+                            second2 = true;
+                            has2 = false;
+                        } else if (second2 && k == 0) {
+                            if (has2) {
+                                second2 = false;
+                                direction2 = 1;
+                                has2 = false;
+                            } else
+                                break;
+                        }
+                    }
+
+                    //Вычисление размеров зоны
+                    int lenW = maxW - minW + 1;
+                    int lenH = maxH - minH + 1;
+                    //Вычисления параметров соотношения
+                    int len = lenH - lenW;
+                    int lenPercent = (int) Math.round(((double) lenW / lenH) * 100);
+                    int percent = (int) Math.round(((double) blackCount / (lenW * lenH)) * 100);
+
+                    //Если это не угловой элемент, то проверить параметры соотношений, иначе просто стереть объект
+                    if ((len > 0 && lenPercent > 30 && lenPercent < 87 && percent > 20 && percent < 67)) {
+                        boolean skip = false;
+                        if (set) {
+                            if ((double) maxX / (lenW - 1) > 1.5f)
+                                skip = true;
+                        } else {
+                            set = true;
+                            maxX = lenW - 1;
+                            maxY = lenH - 1;
+                        }
+                        if (!skip) {
+                            Pix cutPix = Clip.clipRectangle(origImage, new Box(minW, minH, lenW - 1, lenH - 1));
+                            System.out.println("w=" + (lenW - 1) + ", h=" + (lenH - 1));
+                            tesseract.setImage(cutPix);
+                            String res = tesseract.getUTF8Text().replace("|", "1");
+                            System.out.println("RESULT: " + res);
+                            if (!checkSymbol(res).isEmpty()) {
+                                stringBuilder.append(res);
+                            }
+                        }
+                    }
+
+                    //Удаление (обесчвечивание) черного цвета зоны
+                    for (int k = minH; k <= maxH; k++) {
+                        for (int l = minW; l <= maxW; l++) {
+                            if (ourBlack[k][l])
+                                work.setPixel(l, k, 0);
+                        }
+                    }
+                } else {
+                    checkedPoint[i][j] = true;
+                }
+            }
+        }
+        return stringBuilder.toString().toUpperCase();
+    }
+
+    //чистка шумов на изображении, обрабатывает изображение и удаляет всё, что не похоже на символы и мешает распознавать номер.
+    private Pix noiseCleaner(Pix origImage) {
+
+        Pix work = origImage.clone();
+
+        int width = work.getWidth();
+        int height = work.getHeight();
+
+        int maxX = 0;
+        int maxY = 0;
+        boolean set = false;
+
+        //Проверенные точки
+        boolean[][] checkedPoint = new boolean[height][width];
+
+        //Зонированная обработка
+        for (int i = height / 2; i < height; i++) {
+            for (int j = 0; j < width; j++) {
+                if (!checkedPoint[i][j] && work.getPixel(j, i) == -1) {
+                    checkedPoint[i][j] = true;
+
+                    //Черные пиксели найденной зоны
+                    boolean[][] ourBlack = new boolean[height][width];
+                    ourBlack[i][j] = true;
+
+                    //Нахождение пикселей, принадлежащих зоне.
+                    int direction = 1;
+                    int minH = i;
+                    int maxH = i;
+                    int minW = j;
+                    int maxW = j;
+                    int blackCount = 1;
+                    boolean second = false;
+                    //Обработка строки, где найден первй пиксель.
+                    for (int l = j + 1; l < width; l += direction) {
+                        if (!checkedPoint[i][l] && ((l > 0 && ourBlack[i][l - 1]) || (l < width - 1 && ourBlack[i][l + 1]))) {
+                            if (work.getPixel(l, i) == -1) {
+                                ourBlack[i][l] = true;
+                                minW = Math.min(minW, l);
+                                maxW = Math.max(maxW, l);
+                                blackCount++;
+                                checkedPoint[i][l] = true;
+                            }
+                        }
+                        if (!second && l == width - 1) {
+                            direction = -1;
+                            second = true;
+                        } else if (second && l == 0) {
+                            break;
+                        }
+                    }
+                    boolean has = false;
+                    boolean has2 = false;
+                    boolean second2 = false;
+                    int direction2 = 1;
+
+                    //Поиск других строк
+                    for (int k = i + 1; k < height; k += direction2) {
+                        second = false;
+                        direction = 1;
+                        for (int l = 0; l < width; l += direction) {
+
+                            if (!checkedPoint[k][l] && ((l > 0 && ourBlack[k][l - 1]) || (l < width - 1 && ourBlack[k][l + 1]) || (k > 0 && ourBlack[k - 1][l]) || (l > 0 && k > 0 && ourBlack[k - 1][l - 1]) || (l < width - 1 && k > 0 && ourBlack[k - 1][l + 1]) || (k < height - 1 && ourBlack[k + 1][l]) || (l > 0 && k < height - 1 && ourBlack[k + 1][l - 1]) || (l < width - 1 && k < height - 1 && ourBlack[k + 1][l + 1]))) {
+                                if (work.getPixel(l, k) == -1) {
+                                    ourBlack[k][l] = true;
+                                    minW = Math.min(minW, l);
+                                    maxW = Math.max(maxW, l);
+                                    maxH = Math.max(maxH, k);
+                                    minH = Math.min(minH, k);
+                                    has = true;
+                                    has2 = true;
+                                    blackCount++;
+                                    checkedPoint[k][l] = true;
+                                }
+                            }
+                            if (!second && l == width - 1) {
+                                direction = -1;
+                                second = true;
+                                has = false;
+                            } else if (second && l == 0) {
+                                if (has) {
+                                    second = false;
+                                    direction = 1;
+                                    has = false;
+                                } else
+                                    break;
+                            }
+                        }
+                        if (!second2 && k == height - 1) {
+                            direction2 = -1;
+                            second2 = true;
+                            has2 = false;
+                        } else if (second2 && k == 0) {
+                            if (has2) {
+                                second2 = false;
+                                direction2 = 1;
+                                has2 = false;
+                            } else
+                                break;
+                        }
+                    }
+
+                    //Вычисление размеров зоны
+                    int lenW = maxW - minW + 1;
+                    int lenH = maxH - minH + 1;
+                    //Вычисления параметров соотношения
+                    int len = lenH - lenW;
+                    int lenPercent = (int) Math.round(((double) lenW / lenH) * 100);
+                    int percent = (int) Math.round(((double) blackCount / (lenW * lenH)) * 100);
+
+
+                    /*//Проверка на вертикальные границы
+                    int count1 = 0;
+                    int count2 = 0;
+                    has = false;
+                    has2 = false;
+                    boolean left = false;
+                    boolean right = false;
+                    for (int k = minH; k <= maxH; k++) {
+                        if (ourBlack[k][minW] || (minW < width - 1 && ourBlack[k][minW + 1])) {
+                            if (!left) {
+                                count1++;
+                                has = true;
+                            }
+                        } else if (has)
+                            left = true;
+                        if (ourBlack[k][maxW] || (maxW > 0 && ourBlack[k][maxW - 1])) {
+                            if (!right) {
+                                count2++;
+                                has2 = true;
+                            }
+                        } else if (has2)
+                            right = true;
+                        if (left && right)
+                            break;
+                    }
+                    left = false;
+                    right = false;
+                    if (lenH - count1 <= lenH / 4)
+                        left = true;
+                    if (lenH - count2 <= lenH / 4)
+                        right = true;
+
+                    *//*if (right && !left)
+                        if (count1 > lenH / 4)
+                            left = true;*//*
+                    if (!right && left)
+                        if (count2 > lenH / 4)
+                            right = true;
+
+                    *//*if (count1 > lenH / 4)
+                        left = true;
+                    if (count2 > lenH / 4)
+                        right = true;*//*
+
+                    //Проверка на горизонтальные границы
+                    count1 = 0;
+                    count2 = 0;
+                    has = false;
+                    has2 = false;
+                    boolean up = false;
+                    boolean down = false;
+                    for (int k = minW; k <= maxW; k++) {
+                        if (ourBlack[minH][k] || (minH < width - 1 && ourBlack[minH + 1][k])) {
+                            if (!up) {
+                                count1++;
+                                has = true;
+                            }
+                        } else if (has)
+                            up = true;
+                        if (ourBlack[maxH][k] || (maxH > 0 && ourBlack[maxH - 1][k])) {
+                            if (!down) {
+                                count2++;
+                                has2 = true;
+                            }
+                        } else if (has2) {
+                            down = true;
+                        }
+                        if (up && down)
+                            break;
+                    }
+                    up = false;
+                    down = false;
+                    if (lenW - count1 <= lenW / 4)
+                        up = true;
+                    if (lenW - count2 <= lenW / 4)
+                        down = true;
+                    if (left) {
+                        if (count1 > lenW / 4)
+                            up = true;
+                        if (count2 > lenW / 4)
+                            down = true;
+                    }*/
+
+
+                    //Если это не угловой элемент, то проверить параметры соотношений, иначе просто стереть объект
+                    /*if (!(up && left && !down && !right) && !(up && !left && !down && right) && !(!up && left && down && !right) && !(!up && !left && down && right))*/
+                    if ((len > 0 && lenPercent > 30 && lenPercent < 87 && percent > 20 && percent < 67)) {
+                        boolean skip = false;
+                        if (set) {
+                            if ((double) maxX / (lenW - 1) > 1.5f)
+                                skip = true;
+                        } else {
+                            set = true;
+                            maxX = lenW - 1;
+                            maxY = lenH - 1;
+                        }
+                        if (!skip) {
+                            Pix cutPix = Clip.clipRectangle(origImage, new Box(minW, minH, lenW - 1, lenH - 1));
+                            System.out.println("w=" + (lenW - 1) + ", h=" + (lenH - 1));
+                            tesseract.setImage(cutPix);
+                            String res = tesseract.getUTF8Text();
+                            System.out.println("RESULT: " + res);
+                            if (!checkSymbol(res).isEmpty())
+                                continue;
+                        }
+                    }
+
+                    //Удаление (обесчвечивание) черного цвета зоны
+                    for (int k = minH; k <= maxH; k++) {
+                        for (int l = minW; l <= maxW; l++) {
+                            if (ourBlack[k][l])
+                                work.setPixel(l, k, 0);
+                        }
+                    }
+                } else {
+                    checkedPoint[i][j] = true;
+                }
+            }
+        }
+        return work;
     }
 
     private void initializeOpenCVDependencies() {
@@ -74,6 +539,49 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
         cameraBridgeViewBase.enableView();
     }
 
+    private void initializeTessAPIBase() {
+
+        try {
+            InputStream is = getResources().openRawResource(R.raw.leu);
+            File tesserractDir = getDir("tesserract", Context.MODE_PRIVATE);
+            File tessdataDir = new File(tesserractDir, "tessdata");
+            tessdataDir.mkdir();
+            File tessFile = new File(tessdataDir, "leu.traineddata");
+            FileOutputStream os = new FileOutputStream(tessFile);
+
+            byte[] buffer = new byte[4096];
+            int bytesRead;
+            while ((bytesRead = is.read(buffer)) != -1) {
+                os.write(buffer, 0, bytesRead);
+            }
+            is.close();
+            os.close();
+
+            is = getResources().openRawResource(R.raw.rus);
+            tessFile = new File(tessdataDir, "rus.traineddata");
+            os = new FileOutputStream(tessFile);
+
+            buffer = new byte[4096];
+            bytesRead = 0;
+            while ((bytesRead = is.read(buffer)) != -1) {
+                os.write(buffer, 0, bytesRead);
+            }
+            is.close();
+            os.close();
+
+            // Initialise the TessAPIBase
+            tesseract.init(tesserractDir.getAbsolutePath(), "rus");
+            //tesseract.setVariable("tessedit_char_whitelist", "acekopxyABCEHKMOPTXYD0123456789");
+            //tesseract.setVariable(TessBaseAPI.VAR_CHAR_WHITELIST, "ABCDEHKMoPTXy1234567890RUSrus");
+        } catch (Exception e) {
+            Log.e("OCR_Tess", "Error loading tessdata", e);
+        }
+    }
+
+    double convertor(double value, double fromA, double fromB, double toA, double toB) {
+        return (value - fromA) / (fromB - fromA) * (toB - toA) + toA;
+    }
+
     @Override
     protected void onResume() {
         super.onResume();
@@ -88,15 +596,17 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
     @Override
     protected void onDestroy() {
         super.onDestroy();
-
+        tesseract.end();
     }
 
     @Override
     public void onCameraViewStarted(int width, int height) {
-        int max = width > height ? width : height;
+        camWidth = width;
+        camHeight = height;
+        //int max = width > height ? width : height;
         System.out.println(width);
         System.out.println(height);
-        cameraBridgeViewBase.setMaxFrameSize(max, max);
+//        cameraBridgeViewBase.setMaxFrameSize(max, max);
     }
 
     @Override
@@ -117,6 +627,8 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
                     absolutePlateSize = Math.round(height * 0.05f);
                 }
             }
+
+            lastFrame = inputFrame;
 
             cascadeClassifier.detectMultiScale(grayFrame, plates, 1.8, 6, Objdetect.CASCADE_SCALE_IMAGE, new org.opencv.core.Size(absolutePlateSize, absolutePlateSize));
             //Рисуем квадратики,ееей!
