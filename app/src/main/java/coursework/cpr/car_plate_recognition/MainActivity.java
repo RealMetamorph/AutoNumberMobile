@@ -47,6 +47,14 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        button = (Button)findViewById(R.id.web_btn);
+        button.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+               startWebActivity();
+            }
+        });
+
         }
 
     @Override
@@ -75,6 +83,11 @@ public class MainActivity extends AppCompatActivity {
     public void startCameraActivity(){
         Intent intent = new Intent(this, CameraActivity.class);
         startActivity(intent);}
+    public void startWebActivity(){
+        Intent intent = new Intent(this, WebActivity.class);
+        intent.putExtra("carNumber", "M052ET63");
+        startActivity(intent);}
+
     /**
      * A native method that is implemented by the 'native-lib' native library,
      * which is packaged with this application.
