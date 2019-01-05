@@ -26,6 +26,9 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
     private int absolutePlateSize;
     private Button btnCapture;
     private CameraBridgeViewBase cameraBridgeViewBase;
+    private MatOfRect plates;
+    private int currentFrame;
+    private int maxFrame = 3;
 
     //Save to FILE
     private CascadeClassifier cascadeClassifier;
@@ -58,6 +61,7 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
             }
             is.close();
             os.close();
+            currentFrame = maxFrame + 1;
 
             // Load the cascade classifier
             cascadeClassifier = new CascadeClassifier(cascadeFile.getAbsolutePath());
@@ -102,23 +106,30 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
 
     @Override
     public Mat onCameraFrame(Mat inputFrame) {
-        MatOfRect plates = new MatOfRect();
-        Mat grayFrame = new Mat();
-        Imgproc.cvtColor(inputFrame, grayFrame, Imgproc.COLOR_BGR2GRAY);
-        Imgproc.equalizeHist(grayFrame, grayFrame);
-        if (absolutePlateSize == 0) {
-            int height = grayFrame.rows();
-            if (Math.round(height * 0.05f) > 0) {
-                absolutePlateSize = Math.round(height * 0.05f);
+        if (currentFrame >= maxFrame) {
+            plates = new MatOfRect();
+            Mat grayFrame = new Mat();
+            Imgproc.cvtColor(inputFrame, grayFrame, Imgproc.COLOR_BGR2GRAY);
+            Imgproc.equalizeHist(grayFrame, grayFrame);
+            if (absolutePlateSize == 0) {
+                int height = grayFrame.rows();
+                if (Math.round(height * 0.05f) > 0) {
+                    absolutePlateSize = Math.round(height * 0.05f);
+                }
             }
+
+            cascadeClassifier.detectMultiScale(grayFrame, plates, 1.8, 6, Objdetect.CASCADE_SCALE_IMAGE, new org.opencv.core.Size(absolutePlateSize, absolutePlateSize));
+            //Рисуем квадратики,ееей!
+            Rect[] platesArray = plates.toArray();
+            for (int i = 0; i < platesArray.length; i++)
+                Imgproc.rectangle(inputFrame, platesArray[i].tl()/*top-left*/, platesArray[i].br()/*bottom-right*/, new Scalar(229, 40, 64), 3); //new Scalar(229, 40, 64)
+            currentFrame = 0;
+        } else {
+            Rect[] platesArray = plates.toArray();
+            for (int i = 0; i < platesArray.length; i++)
+                Imgproc.rectangle(inputFrame, platesArray[i].tl()/*top-left*/, platesArray[i].br()/*bottom-right*/, new Scalar(229, 40, 64), 3); //new Scalar(229, 40, 64)
+            currentFrame++;
         }
-
-        cascadeClassifier.detectMultiScale(grayFrame, plates, 1.8, 6, Objdetect.CASCADE_SCALE_IMAGE, new org.opencv.core.Size(absolutePlateSize, absolutePlateSize));
-        //Рисуем квадратики,ееей!
-        Rect[] platesArray = plates.toArray();
-        for (int i = 0; i < platesArray.length; i++)
-            Imgproc.rectangle(inputFrame, platesArray[i].tl()/*top-left*/, platesArray[i].br()/*bottom-right*/, new Scalar(229, 40, 64), 3); //new Scalar(229, 40, 64)
-
 //        Mat something = new Mat(inputFrame.cols(), inputFrame.rows(), inputFrame.type());
 //        Core.flip(inputFrame,something, (int) (System.currentTimeMillis()/1000w)%10);
 //        //Imgproc.resize(something,something,inputFrame.size());
