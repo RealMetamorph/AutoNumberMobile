@@ -97,6 +97,7 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
 
                         String result = OCR(pix);
                         System.out.println("Result recognition: " + result);
+                        Log.i("Result recognition", result);
                         Intent intent = new Intent(self, WebActivity.class);
                         intent.putExtra("href", "https://avtocod.ru/proverkaavto/" + result + "?rd=GRZ");
                         startActivity(intent);
@@ -630,7 +631,7 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
 
             lastFrame = inputFrame;
 
-            cascadeClassifier.detectMultiScale(grayFrame, plates, 1.8, 6, Objdetect.CASCADE_SCALE_IMAGE, new org.opencv.core.Size(absolutePlateSize, absolutePlateSize));
+            cascadeClassifier.detectMultiScale(grayFrame, plates, 1.1, 4, Objdetect.CASCADE_SCALE_IMAGE, new org.opencv.core.Size(absolutePlateSize, absolutePlateSize));
             //Рисуем квадратики,ееей!
             Rect[] platesArray = plates.toArray();
             for (int i = 0; i < platesArray.length; i++)

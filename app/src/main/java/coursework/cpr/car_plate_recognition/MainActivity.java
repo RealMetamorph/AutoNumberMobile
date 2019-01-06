@@ -3,6 +3,7 @@ package coursework.cpr.car_plate_recognition;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.CardView;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.Menu;
@@ -21,8 +22,9 @@ public class MainActivity extends AppCompatActivity {
         System.loadLibrary("opencv_java3");
         System.loadLibrary("tess");
     }
-
     private Button button;
+    private CardView start;
+    private CardView info;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -38,25 +40,24 @@ public class MainActivity extends AppCompatActivity {
         }
 
 
-        //  TextView tv = (TextView) findViewById(R.id.sample_text);
-        //  tv.setText(stringFromJNI());
-        button = (Button) findViewById(R.id.button);
-        button.setOnClickListener(new View.OnClickListener() {
+      //  TextView tv = (TextView) findViewById(R.id.sample_text);
+      //  tv.setText(stringFromJNI());
+        start = findViewById(R.id.start);
+        start.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 startCameraActivity();
             }
         });
-
-        button = (Button) findViewById(R.id.web_btn);
-        button.setOnClickListener(new View.OnClickListener() {
+        info = findViewById(R.id.info);
+        info.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 startWebActivity();
             }
         });
 
-    }
+        }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {

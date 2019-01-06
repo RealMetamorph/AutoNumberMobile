@@ -27,4 +27,7 @@
     <string name="key_switch1">key_switch1</string>
     <string name="key_switch2">key_switch2</string>
     <string name="button">Button</string>
+    <string name="work">Работать</string>
+    <string name="web_btn">web_btn</string>
+    <string name="info">Инфо</string>
 </resources>
