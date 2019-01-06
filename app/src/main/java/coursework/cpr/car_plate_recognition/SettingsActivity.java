@@ -1,5 +1,6 @@
 package coursework.cpr.car_plate_recognition;
 
+import android.content.SharedPreferences;
 import android.preference.SwitchPreference;
 import android.support.v7.app.AppCompatActivity;
 
@@ -18,10 +19,16 @@ import android.preference.PreferenceFragment;
 import android.preference.PreferenceManager;
 import android.preference.RingtonePreference;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.MenuItem;
+import android.widget.EditText;
+import android.widget.Toast;
+
+import static coursework.cpr.car_plate_recognition.MainActivity.APP_PREFERENCES;
 
 public class SettingsActivity extends AppCompatActivity {
     private static final String TAG = SettingsActivity.class.getSimpleName();
+    SharedPreferences sPref;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -30,8 +37,9 @@ public class SettingsActivity extends AppCompatActivity {
 
         // load settings fragment
         getFragmentManager().beginTransaction().replace(android.R.id.content, new MainPreferenceFragment()).commit();
-    }
+        sPref = getSharedPreferences(APP_PREFERENCES, Context.MODE_PRIVATE);
 
+    }
 
 
     public static class MainPreferenceFragment extends PreferenceFragment {
@@ -41,7 +49,12 @@ public class SettingsActivity extends AppCompatActivity {
             addPreferencesFromResource(R.xml.pref_main);
 
             // gallery EditText change listener
-            bindPreferenceSummaryToValue(findPreference(getString(R.string.Enter_text_name)));
+            bindPreferenceSummaryToValue(findPreference(getString(R.string.scalefactor)));
+            bindPreferenceSummaryToValue(findPreference(getString(R.string.frequency)));
+            bindPreferenceSummaryToValue(findPreference(getString(R.string.minNeighbors)));
+            bindPreferenceSummaryToValue(findPreference(getString(R.string.smoothX)));
+            bindPreferenceSummaryToValue(findPreference(getString(R.string.smoothY)));
+            bindPreferenceSummaryToValue(findPreference(getString(R.string.binarizeFactor)));
 
 
         }
@@ -54,6 +67,7 @@ public class SettingsActivity extends AppCompatActivity {
         }
         return super.onOptionsItemSelected(item);
     }
+
 
     private static void bindPreferenceSummaryToValue(Preference preference) {
         preference.setOnPreferenceChangeListener(sBindPreferenceSummaryToValueListener);
@@ -70,11 +84,12 @@ public class SettingsActivity extends AppCompatActivity {
      */
     private static Preference.OnPreferenceChangeListener sBindPreferenceSummaryToValueListener;
 
-    static {
+    {
         sBindPreferenceSummaryToValueListener = new Preference.OnPreferenceChangeListener() {
             @Override
             public boolean onPreferenceChange(Preference preference, Object newValue) {
                 String stringValue = newValue.toString();
+
 
                 if (preference instanceof ListPreference) {
                     // For list preferences, look up the correct display value in
@@ -111,17 +126,39 @@ public class SettingsActivity extends AppCompatActivity {
                     }
 
                 } else if (preference instanceof EditTextPreference) {
-
                     preference.setSummary(stringValue);
-                }
-                else if (preference instanceof SwitchPreference) {
+                    saveData(preference.getKey(), stringValue);
+                   // Log.i("settings",preference.getKey());
 
-                    //TODO
 
+                  //  String savedText = sPref.getString(preference.getKey(), "");
+                    //toast(savedText);
+
+                } else if (preference instanceof SwitchPreference) {
+                    SharedPreferences.Editor ed = sPref.edit();
+                    if (preference.getSharedPreferences().getBoolean("key_checkbox", true)) {
+                        ed.putBoolean("key_checkbox", true);
+                    } else {
+                        ed.putBoolean("key_checkbox", false);
+                    }
+                    ed.apply();
                 }
                 return true;
             }
         };
     }
+
+    void saveData(String data, String etText) {
+        SharedPreferences.Editor ed = sPref.edit();
+        ed.putString(data, etText);
+        ed.apply();
+     //   Toast.makeText(this, "Data saved", Toast.LENGTH_SHORT).show();
+
+    }
+
+    void toast(String data) {
+        Toast.makeText(this, data, Toast.LENGTH_LONG).show();
+    }
+
 
 }
