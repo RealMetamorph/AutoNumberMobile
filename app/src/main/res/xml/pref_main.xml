@@ -1,42 +1,56 @@
 <?xml version="1.0" encoding="utf-8"?>
-<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
-    <PreferenceCategory android:title="General">
-        <EditTextPreference
-            android:defaultValue="@string/Enter_text"
-            android:key="@string/Enter_text_name"
-            android:summary="@string/Enter_text"
-            android:title="@string/title_Enter_text" />
-
-        <CheckBoxPreference
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:sample="http://schemas.android.com/apk/res-auto">
+    <PreferenceCategory android:title="Основные параметры">
+        <SwitchPreference
             android:defaultValue="true"
             android:key="@string/key_checkbox"
             android:summary="@string/summary_checkbox"
             android:title="@string/title_check" />
+    </PreferenceCategory>
+    <EditTextPreference
+        android:defaultValue="@string/frequencyDefaultValue"
+        android:key="@string/frequency"
+        android:summary="@string/frequencySummary"
+        android:title="@string/frequencyTitle" />
 
-        <ListPreference
-            android:defaultValue="3"
-            android:dialogTitle="@string/title_upload_quality"
-            android:entries="@array/pref_upload_quality_entries"
-            android:entryValues="@array/pref_upload_quality_values"
-            android:key="@string/key_upload_quality"
-            android:summary="@string/summary_upload_video_quality"
-            android:title="@string/title_upload_quality" />
+    <PreferenceCategory android:title="OpenCV">
 
+        <EditTextPreference
+            android:defaultValue="@string/scalefactorDefaultValue"
+            android:key="@string/scalefactor"
+            android:summary="@string/scalefactorSummary"
+            android:title="@string/scalefactorTitle" />
+
+        <EditTextPreference
+            android:defaultValue="@string/minNeighborsDefaultValue"
+            android:key="@string/minNeighbors"
+            android:summary="@string/minNeighborsSummary"
+            android:title="@string/minNeighborsTitle" />
     </PreferenceCategory>
 
-    <PreferenceCategory android:title="@string/pref_title_misc">
+    <PreferenceCategory android:title="Tesseract">
 
-        <SwitchPreference
-            android:defaultValue="true"
-            android:key="@string/key_switch1"
-            android:title="@string/title_switch1" />
+        <EditTextPreference
+            android:defaultValue="@string/smoothxDefaultValue"
+            android:key="@string/smoothX"
+            android:summary="@string/smoothxSummary"
+            android:title="@string/smoothxTitle" />
+        <EditTextPreference
+            android:defaultValue="@string/smoothyDefaultValue"
+            android:key="@string/smoothY"
+            android:summary="@string/smoothySummary"
+            android:title="@string/smoothyTitle" />
+        <EditTextPreference
+            android:defaultValue="@string/binarizeFactorDefaultValue"
+            android:key="@string/binarizeFactor"
+            android:summary="@string/binarizeFactorSummary"
+            android:title="@string/binarizeFactorTitle" />
 
-        <SwitchPreference
-            android:defaultValue="true"
-            android:key="@string/key_switch2"
-            android:summary="@string/summary_switch2"
-            android:title="@string/title_switch2" />
+
     </PreferenceCategory>
+    >
+
 
     <PreferenceCategory android:title="@string/pref_header_about">
 

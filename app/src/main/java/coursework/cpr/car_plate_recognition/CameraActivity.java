@@ -2,6 +2,8 @@ package coursework.cpr.car_plate_recognition;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Environment;
 import android.support.v7.app.AppCompatActivity;
@@ -35,6 +37,8 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 
+import static coursework.cpr.car_plate_recognition.MainActivity.APP_PREFERENCES;
+
 
 public class CameraActivity extends AppCompatActivity implements CameraBridgeViewBase.CvCameraViewListener {
 
@@ -50,6 +54,7 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
     private int camWidth;
     private CameraActivity self;
     private File imageDirDebug;
+    SharedPreferences sPref;
 
     //Save to FILE
     private CascadeClassifier cascadeClassifier;
@@ -59,10 +64,12 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
         super.onCreate(savedInstanceState);
         this.setContentView(R.layout.activity_camera);
         self = this;
+        sPref = getSharedPreferences(APP_PREFERENCES, Context.MODE_PRIVATE);
         imageDirDebug = new File(Environment.getExternalStorageDirectory(), "CarPlateRecognition");
         //noinspection ResultOfMethodCallIgnored
         imageDirDebug.mkdir();
         cameraBridgeViewBase = findViewById(R.id.camera2View);
+        maxFrame = Math.round(Float.parseFloat(loadData(getString(R.string.frequency))));
         cameraBridgeViewBase.setVisibility(SurfaceView.VISIBLE);
         cameraBridgeViewBase.setCvCameraViewListener(this);
         cameraBridgeViewBase.setOnTouchListener(new View.OnTouchListener() {
@@ -94,7 +101,8 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
 
                             Pix pix = ReadFile.readFile(imageFile);
                             pix = Convert.convertTo8(pix);
-                            pix = Binarize.otsuAdaptiveThreshold(pix, pix.getWidth(), pix.getHeight(), 2, 1, 0.01f);
+                        //    pix = Binarize.otsuAdaptiveThreshold(pix, pix.getWidth(), pix.getHeight(), 2, 1, 0.01f);
+                            pix = Binarize.otsuAdaptiveThreshold(pix, pix.getWidth(), pix.getHeight(), (int)Math.floor(Float.parseFloat(loadData(getString(R.string.smoothX)))), (int)Math.floor(Float.parseFloat(loadData(getString(R.string.smoothY)))), Float.parseFloat((getString(R.string.scalefactor))));
                             imageFileDebug = new File(imageDirDebug, "binariesImage.png");
                             WriteFile.writeImpliedFormat(pix, imageFileDebug);
 
@@ -129,6 +137,11 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
                 return symbol;
         }
         return "";
+    }
+
+    String loadData(String data) {
+        String savedText = sPref.getString(data, "");
+        return savedText;
     }
 
     //OCR
@@ -630,6 +643,14 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
 
     @Override
     public Mat onCameraFrame(Mat inputFrame) {
+
+//        Log.i("test scale", (loadData(getString(R.string.scalefactor))));
+//        Log.i("test frequency", (loadData(getString(R.string.frequency))));
+//        Log.i("test minNeighbors",(loadData(getString(R.string.minNeighbors))));
+//        Log.i("test smoothx",(loadData(getString(R.string.smoothX))));
+//        Log.i("test smoothy",(loadData(getString(R.string.smoothY))));
+//        Log.i("test binarize",getString(R.string.binarizeFactor));
+//        Log.i("test", "123");
         if (currentFrame >= maxFrame) {
             plates = new MatOfRect();
             Mat grayFrame = new Mat();
@@ -644,7 +665,9 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
 
             lastFrame = inputFrame;
 
-            cascadeClassifier.detectMultiScale(grayFrame, plates, 1.1, 6, Objdetect.CASCADE_SCALE_IMAGE, new org.opencv.core.Size(absolutePlateSize, absolutePlateSize));
+
+            cascadeClassifier.detectMultiScale(grayFrame, plates, Float.parseFloat(loadData(getString(R.string.scalefactor))), (int) Math.floor(Float.parseFloat(loadData(getString(R.string.minNeighbors)))), Objdetect.CASCADE_SCALE_IMAGE, new org.opencv.core.Size(absolutePlateSize, absolutePlateSize));
+            //cascadeClassifier.detectMultiScale(grayFrame, plates, 1.1, 6, Objdetect.CASCADE_SCALE_IMAGE, new org.opencv.core.Size(absolutePlateSize, absolutePlateSize));
             //Рисуем квадратики,ееей!
             Rect[] platesArray = plates.toArray();
             for (int i = 0; i < platesArray.length; i++)
