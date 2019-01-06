@@ -1,7 +1,7 @@
 package coursework.cpr.car_plate_recognition;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
-import android.content.Intent;
 import android.os.Bundle;
 import android.os.Environment;
 import android.support.v7.app.AppCompatActivity;
@@ -49,6 +49,7 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
     private int camHeight;
     private int camWidth;
     private CameraActivity self;
+    private File imageDirDebug;
 
     //Save to FILE
     private CascadeClassifier cascadeClassifier;
@@ -58,49 +59,52 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
         super.onCreate(savedInstanceState);
         this.setContentView(R.layout.activity_camera);
         self = this;
+        imageDirDebug = new File(Environment.getExternalStorageDirectory(), "CarPlateRecognition");
+        //noinspection ResultOfMethodCallIgnored
+        imageDirDebug.mkdir();
         cameraBridgeViewBase = findViewById(R.id.camera2View);
         cameraBridgeViewBase.setVisibility(SurfaceView.VISIBLE);
         cameraBridgeViewBase.setCvCameraViewListener(this);
         cameraBridgeViewBase.setOnTouchListener(new View.OnTouchListener() {
+            @SuppressLint("ClickableViewAccessibility")
             @Override
             public boolean onTouch(View v, MotionEvent event) {
-                int viewHeight = v.getHeight();
-                int viewWidth = v.getWidth();
-                double x = convertor(event.getY(), 0, 0.95 * viewHeight, 0, camWidth);
-                double y = camHeight - convertor(event.getX(), 0, viewWidth, 0, camHeight);
-                System.out.println("X=" + x);
-                System.out.println("Y=" + y);
-                if (plates == null)
-                    return false;
-                Rect[] platesArray = plates.toArray();
-                for (Rect rect : platesArray) {
-                    System.out.println(rect.x + "**" + rect.y + "**" + rect.width + "**" + rect.height);
-                    if (rect.contains(new Point(x, y))) {
-                        System.out.println("CONTAINS!!!");
-                        Mat findRect = lastFrame.submat(rect);
+                if (event.getActionButton() == MotionEvent.ACTION_DOWN) {
+                    int viewHeight = v.getHeight();
+                    int viewWidth = v.getWidth();
+                    double x = convertor(event.getY(), 0, 0.95 * viewHeight, 0, camWidth);
+                    double y = camHeight - convertor(event.getX(), 0, viewWidth, 0, camHeight);
+                    System.out.println("X=" + x);
+                    System.out.println("Y=" + y);
+                    if (plates == null)
+                        return false;
+                    Rect[] platesArray = plates.toArray();
+                    for (Rect rect : platesArray) {
+                        System.out.println(rect.x + "**" + rect.y + "**" + rect.width + "**" + rect.height);
+                        if (rect.contains(new Point(x, y))) {
+                            System.out.println("CONTAINS!!!");
+                            Mat findRect = lastFrame.submat(rect);
 
-                        File imageDirDebug = Environment.getExternalStorageDirectory();
-                        //noinspection ResultOfMethodCallIgnored
-                        new File(imageDirDebug, "CarPlateRecognition").mkdir();
-                        File imageFileDebug = new File(imageDirDebug, "CarPlateRecognition/beforeImage.png");
-                        Imgcodecs.imwrite(imageFileDebug.getAbsolutePath(), findRect);
+                            File imageFileDebug = new File(imageDirDebug, "beforeImage.png");
+                            Imgcodecs.imwrite(imageFileDebug.getAbsolutePath(), findRect);
 
-                        File imageDir = getDir("imageToOCR", Context.MODE_PRIVATE);
-                        File imageFile = new File(imageDir, "image.png");
-                        Imgcodecs.imwrite(imageFile.getAbsolutePath(), findRect);
+                            File imageDir = getDir("imageToOCR", Context.MODE_PRIVATE);
+                            File imageFile = new File(imageDir, "image.png");
+                            Imgcodecs.imwrite(imageFile.getAbsolutePath(), findRect);
 
-                        Pix pix = ReadFile.readFile(imageFile);
-                        pix = Convert.convertTo8(pix);
-                        pix = Binarize.otsuAdaptiveThreshold(pix, pix.getWidth(), pix.getHeight(), 2, 1, 0.01f);
-                        imageFileDebug = new File(imageDirDebug, "CarPlateRecognition/binariesImage.png");
-                        WriteFile.writeImpliedFormat(pix, imageFileDebug);
+                            Pix pix = ReadFile.readFile(imageFile);
+                            pix = Convert.convertTo8(pix);
+                            pix = Binarize.otsuAdaptiveThreshold(pix, pix.getWidth(), pix.getHeight(), 2, 1, 0.01f);
+                            imageFileDebug = new File(imageDirDebug, "binariesImage.png");
+                            WriteFile.writeImpliedFormat(pix, imageFileDebug);
 
-                        String result = OCR(pix);
-                        System.out.println("Result recognition: " + result);
-                        Log.i("Result recognition", result);
-                        Intent intent = new Intent(self, WebActivity.class);
-                        intent.putExtra("href", "https://avtocod.ru/proverkaavto/" + result + "?rd=GRZ");
-                        startActivity(intent);
+                            String result = OCR(pix);
+                            System.out.println("Result recognition: " + result);
+                            Log.i("Result recognition", result);
+                            //Intent intent = new Intent(self, WebActivity.class);
+                            //intent.putExtra("href", "https://avtocod.ru/proverkaavto/" + result + "?rd=GRZ");
+                            //startActivity(intent);
+                        }
                     }
                 }
                 return true;
@@ -131,6 +135,9 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
     private String OCR(Pix origImage) {
 
         Pix work = origImage.clone();
+        File debugDir = new File(imageDirDebug, "" + origImage.getHeight() + "X" + origImage.getWidth());
+        //noinspection ResultOfMethodCallIgnored
+        debugDir.mkdir();
 
         int width = work.getWidth();
         int height = work.getHeight();
@@ -243,7 +250,7 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
                     if ((len > 0 && lenPercent > 30 && lenPercent < 87 && percent > 20 && percent < 67)) {
                         boolean skip = false;
                         if (set) {
-                            if ((double) maxX / (lenW - 1) > 1.5f)
+                            if ((double) maxX / (lenW - 1) > 1.6f)
                                 skip = true;
                         } else {
                             set = true;
@@ -254,7 +261,9 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
                             Pix cutPix = Clip.clipRectangle(origImage, new Box(minW, minH, lenW - 1, lenH - 1));
                             System.out.println("w=" + (lenW - 1) + ", h=" + (lenH - 1));
                             tesseract.setImage(cutPix);
-                            String res = tesseract.getUTF8Text().replace("|", "1");
+                            String res = tesseract.getUTF8Text();
+                            File imageFileDebug = new File(debugDir, "" + i + "x" + j + " == " + res + ".png");
+                            WriteFile.writeImpliedFormat(cutPix, imageFileDebug);
                             System.out.println("RESULT: " + res);
                             if (!checkSymbol(res).isEmpty()) {
                                 stringBuilder.append(res);
@@ -543,7 +552,7 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
     private void initializeTessAPIBase() {
 
         try {
-            InputStream is = getResources().openRawResource(R.raw.leu);
+/*            InputStream is = getResources().openRawResource(R.raw.leu);
             File tesserractDir = getDir("tesserract", Context.MODE_PRIVATE);
             File tessdataDir = new File(tesserractDir, "tessdata");
             tessdataDir.mkdir();
@@ -556,14 +565,18 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
                 os.write(buffer, 0, bytesRead);
             }
             is.close();
-            os.close();
+            os.close();*/
 
-            is = getResources().openRawResource(R.raw.rus);
-            tessFile = new File(tessdataDir, "rus.traineddata");
-            os = new FileOutputStream(tessFile);
+            InputStream is = getResources().openRawResource(R.raw.ru);
+            File tesserractDir = getDir("tesserract", Context.MODE_PRIVATE);
+            File tessdataDir = new File(tesserractDir, "tessdata");
+            //noinspection ResultOfMethodCallIgnored
+            tessdataDir.mkdir();
+            File tessFile = new File(tessdataDir, "ru.traineddata");
+            FileOutputStream os = new FileOutputStream(tessFile);
 
-            buffer = new byte[4096];
-            bytesRead = 0;
+            byte[] buffer = new byte[4096];
+            int bytesRead = 0;
             while ((bytesRead = is.read(buffer)) != -1) {
                 os.write(buffer, 0, bytesRead);
             }
@@ -571,7 +584,7 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
             os.close();
 
             // Initialise the TessAPIBase
-            tesseract.init(tesserractDir.getAbsolutePath(), "rus");
+            tesseract.init(tesserractDir.getAbsolutePath(), "ru");
             //tesseract.setVariable("tessedit_char_whitelist", "acekopxyABCEHKMOPTXYD0123456789");
             //tesseract.setVariable(TessBaseAPI.VAR_CHAR_WHITELIST, "ABCDEHKMoPTXy1234567890RUSrus");
         } catch (Exception e) {
@@ -631,7 +644,7 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
 
             lastFrame = inputFrame;
 
-            cascadeClassifier.detectMultiScale(grayFrame, plates, 1.1, 4, Objdetect.CASCADE_SCALE_IMAGE, new org.opencv.core.Size(absolutePlateSize, absolutePlateSize));
+            cascadeClassifier.detectMultiScale(grayFrame, plates, 1.1, 6, Objdetect.CASCADE_SCALE_IMAGE, new org.opencv.core.Size(absolutePlateSize, absolutePlateSize));
             //Рисуем квадратики,ееей!
             Rect[] platesArray = plates.toArray();
             for (int i = 0; i < platesArray.length; i++)
