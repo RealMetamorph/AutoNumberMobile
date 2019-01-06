@@ -101,11 +101,10 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
 
                             Pix pix = ReadFile.readFile(imageFile);
                             pix = Convert.convertTo8(pix);
-                            //    pix = Binarize.otsuAdaptiveThreshold(pix, pix.getWidth(), pix.getHeight(), 2, 1, 0.01f);
-                            pix = Binarize.otsuAdaptiveThreshold(pix, pix.getWidth(), pix.getHeight(), (int) Math.floor(Float.parseFloat(loadData(getString(R.string.smoothX)))), (int) Math.floor(Float.parseFloat(loadData(getString(R.string.smoothY)))), Float.parseFloat((getString(R.string.scalefactor))));
+                        //    pix = Binarize.otsuAdaptiveThreshold(pix, pix.getWidth(), pix.getHeight(), 2, 1, 0.01f);
+                            pix = Binarize.otsuAdaptiveThreshold(pix, pix.getWidth(), pix.getHeight(), (int)Math.floor(Float.parseFloat(loadData(getString(R.string.smoothX)))), (int)Math.floor(Float.parseFloat(loadData(getString(R.string.smoothY)))), Float.parseFloat((getString(R.string.scalefactor))));
                             imageFileDebug = new File(imageDirDebug, "binariesImage.png");
                             WriteFile.writeImpliedFormat(pix, imageFileDebug);
-
 
                             String result = OCR(pix);
                             System.out.println("Result recognition: " + result);
