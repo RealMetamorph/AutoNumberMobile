@@ -1,16 +1,10 @@
 package coursework.cpr.car_plate_recognition;
 
-import android.content.SharedPreferences;
-import android.preference.SwitchPreference;
-import android.support.v7.app.AppCompatActivity;
-
 import android.content.Context;
-import android.content.Intent;
-import android.content.pm.PackageManager;
+import android.content.SharedPreferences;
 import android.media.Ringtone;
 import android.media.RingtoneManager;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
 import android.preference.EditTextPreference;
 import android.preference.ListPreference;
@@ -18,10 +12,10 @@ import android.preference.Preference;
 import android.preference.PreferenceFragment;
 import android.preference.PreferenceManager;
 import android.preference.RingtonePreference;
+import android.preference.SwitchPreference;
+import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
-import android.util.Log;
 import android.view.MenuItem;
-import android.widget.EditText;
 import android.widget.Toast;
 
 import static coursework.cpr.car_plate_recognition.MainActivity.APP_PREFERENCES;
@@ -55,6 +49,7 @@ public class SettingsActivity extends AppCompatActivity {
             bindPreferenceSummaryToValue(findPreference(getString(R.string.smoothX)));
             bindPreferenceSummaryToValue(findPreference(getString(R.string.smoothY)));
             bindPreferenceSummaryToValue(findPreference(getString(R.string.binarizeFactor)));
+            bindPreferenceSummaryToValue(findPreference(getString(R.string.key_checkbox)));
 
 
         }

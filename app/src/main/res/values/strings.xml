@@ -41,9 +41,9 @@
     <string name="scalefactor">scalefactor</string>
     <string name="scalefactorTitle">Фактор скалирования тренировочных данных</string>
     <string name="scalefactorSummary">1.1</string>
-    <string name="minNeighborsDefaultValue">4</string>
+    <string name="minNeighborsDefaultValue">6</string>
     <string name="minNeighbors">minneighbors</string>
-    <string name="minNeighborsSummary">4</string>
+    <string name="minNeighborsSummary">6</string>
     <string name="minNeighborsTitle">Минимальное число соседей</string>
     <string name="smoothxDefaultValue">2</string>
     <string name="smoothX">smoothX</string>

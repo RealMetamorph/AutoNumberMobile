@@ -12,6 +12,7 @@ import android.view.MotionEvent;
 import android.view.SurfaceView;
 import android.view.View;
 import android.widget.Button;
+import android.widget.Toast;
 
 import com.googlecode.leptonica.android.Binarize;
 import com.googlecode.leptonica.android.Box;
@@ -101,17 +102,25 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
 
                             Pix pix = ReadFile.readFile(imageFile);
                             pix = Convert.convertTo8(pix);
-                        //    pix = Binarize.otsuAdaptiveThreshold(pix, pix.getWidth(), pix.getHeight(), 2, 1, 0.01f);
-                            pix = Binarize.otsuAdaptiveThreshold(pix, pix.getWidth(), pix.getHeight(), (int)Math.floor(Float.parseFloat(loadData(getString(R.string.smoothX)))), (int)Math.floor(Float.parseFloat(loadData(getString(R.string.smoothY)))), Float.parseFloat((getString(R.string.scalefactor))));
+                            pix = Binarize.otsuAdaptiveThreshold(pix, pix.getWidth(), pix.getHeight(), 2, 1, 0.01f);
+                            //pix = Binarize.otsuAdaptiveThreshold(pix, pix.getWidth(), pix.getHeight(), (int) Math.floor(Float.parseFloat(loadData(getString(R.string.smoothX)))), (int) Math.floor(Float.parseFloat(loadData(getString(R.string.smoothY)))), Float.parseFloat((getString(R.string.scalefactor))));
                             imageFileDebug = new File(imageDirDebug, "binariesImage.png");
                             WriteFile.writeImpliedFormat(pix, imageFileDebug);
 
-                            String result = OCR(pix);
+                            String result = OCR(pix).replaceAll("[/s]*", "");
                             System.out.println("Result recognition: " + result);
                             Log.i("Result recognition", result);
-                            //Intent intent = new Intent(self, WebActivity.class);
-                            //intent.putExtra("href", "https://avtocod.ru/proverkaavto/" + result + "?rd=GRZ");
-                            //startActivity(intent);
+                            System.out.println(loadData(getString(R.string.key_checkbox)));
+                            if (Boolean.parseBoolean(loadData(getString(R.string.key_checkbox)))) {
+                                if (!result.isEmpty()) {
+                                    Intent intent = new Intent(self, WebActivity.class);
+                                    intent.putExtra("href", "https://avtocod.ru/proverkaavto/" + result + "?rd=GRZ");
+                                    startActivity(intent);
+                                } else
+                                    Toast.makeText(self, "Nothing find", Toast.LENGTH_LONG).show();
+                            } else {
+                                Toast.makeText(self, result.isEmpty() ? "Nothing find" : ("Result recognition" + result), Toast.LENGTH_LONG).show();
+                            }
                         }
                     }
                 }
@@ -140,8 +149,7 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
     }
 
     String loadData(String data) {
-        String savedText = sPref.getString(data, "");
-        return savedText;
+        return sPref.getString(data, "");
     }
 
     //OCR
@@ -262,14 +270,14 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
                     //Если это не угловой элемент, то проверить параметры соотношений, иначе просто стереть объект
                     if ((len > 0 && lenPercent > 30 && lenPercent < 87 && percent > 20 && percent < 67)) {
                         boolean skip = false;
-                        if (set) {
+                        /*if (set) {
                             if ((double) maxX / (lenW - 1) > 1.6f)
                                 skip = true;
                         } else {
                             set = true;
                             maxX = lenW - 1;
                             maxY = lenH - 1;
-                        }
+                        }*/
                         if (!skip) {
                             Pix cutPix = Clip.clipRectangle(origImage, new Box(minW, minH, lenW - 1, lenH - 1));
                             System.out.println("w=" + (lenW - 1) + ", h=" + (lenH - 1));
@@ -565,21 +573,6 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
     private void initializeTessAPIBase() {
 
         try {
-/*            InputStream is = getResources().openRawResource(R.raw.leu);
-            File tesserractDir = getDir("tesserract", Context.MODE_PRIVATE);
-            File tessdataDir = new File(tesserractDir, "tessdata");
-            tessdataDir.mkdir();
-            File tessFile = new File(tessdataDir, "leu.traineddata");
-            FileOutputStream os = new FileOutputStream(tessFile);
-
-            byte[] buffer = new byte[4096];
-            int bytesRead;
-            while ((bytesRead = is.read(buffer)) != -1) {
-                os.write(buffer, 0, bytesRead);
-            }
-            is.close();
-            os.close();*/
-
             InputStream is = getResources().openRawResource(R.raw.ru);
             File tesserractDir = getDir("tesserract", Context.MODE_PRIVATE);
             File tessdataDir = new File(tesserractDir, "tessdata");
@@ -589,7 +582,7 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
             FileOutputStream os = new FileOutputStream(tessFile);
 
             byte[] buffer = new byte[4096];
-            int bytesRead = 0;
+            int bytesRead;
             while ((bytesRead = is.read(buffer)) != -1) {
                 os.write(buffer, 0, bytesRead);
             }
