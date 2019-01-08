@@ -173,7 +173,7 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
         StringBuilder stringBuilder = new StringBuilder();
 
         //Зонированная обработка
-        for (int i = height / 2 - (int) (0.05 * height); i < height + (int) (0.05 * height); i++) {
+        for (int i = height / 2 - (int) (0.05 * height); i < height / 2 + (int) (0.05 * height); i++) {
             for (int j = 0; j < width; j++) {
                 if (!checkedPoint[i][j] && work.getPixel(j, i) == -1) {
                     checkedPoint[i][j] = true;
