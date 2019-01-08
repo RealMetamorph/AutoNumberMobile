@@ -132,20 +132,14 @@ public class SettingsActivity extends AppCompatActivity {
                 } else if (preference instanceof EditTextPreference) {
                     preference.setSummary(stringValue);
                     saveData(preference.getKey(), stringValue);
-                   // Log.i("settings",preference.getKey());
+                    // Log.i("settings",preference.getKey());
 
 
-                  //  String savedText = sPref.getString(preference.getKey(), "");
+                    //  String savedText = sPref.getString(preference.getKey(), "");
                     //toast(savedText);
 
                 } else if (preference instanceof SwitchPreference) {
-                    SharedPreferences.Editor ed = sPref.edit();
-                    if (preference.getSharedPreferences().getBoolean("key_checkbox", false)) {
-                        ed.putString("key_checkbox", "true");
-                    } else {
-                        ed.putString("key_checkbox", "false");
-                    }
-                    ed.apply();
+                    saveData(preference.getKey(), stringValue);
                 }
                 return true;
             }
@@ -156,7 +150,7 @@ public class SettingsActivity extends AppCompatActivity {
         SharedPreferences.Editor ed = sPref.edit();
         ed.putString(data, etText);
         ed.apply();
-     //   Toast.makeText(this, "Data saved", Toast.LENGTH_SHORT).show();
+        //   Toast.makeText(this, "Data saved", Toast.LENGTH_SHORT).show();
 
     }
 
