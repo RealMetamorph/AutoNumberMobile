@@ -49,7 +49,7 @@ public class SettingsActivity extends AppCompatActivity {
             bindPreferenceSummaryToValue(findPreference(getString(R.string.smoothX)));
             bindPreferenceSummaryToValue(findPreference(getString(R.string.smoothY)));
             bindPreferenceSummaryToValue(findPreference(getString(R.string.binarizeFactor)));
-            bindPreferenceSummaryToValue(findPreference(getString(R.string.key_checkbox)));
+            bindPreferenceSummaryToValueBoolean(findPreference(getString(R.string.key_checkbox)));
 
 
         }
@@ -71,6 +71,15 @@ public class SettingsActivity extends AppCompatActivity {
                 PreferenceManager
                         .getDefaultSharedPreferences(preference.getContext())
                         .getString(preference.getKey(), ""));
+    }
+
+    private static void bindPreferenceSummaryToValueBoolean(Preference preference) {
+        preference.setOnPreferenceChangeListener(sBindPreferenceSummaryToValueListener);
+
+        sBindPreferenceSummaryToValueListener.onPreferenceChange(preference,
+                PreferenceManager
+                        .getDefaultSharedPreferences(preference.getContext())
+                        .getBoolean(preference.getKey(), false) ? "true" : "false");
     }
 
     /**
@@ -131,10 +140,10 @@ public class SettingsActivity extends AppCompatActivity {
 
                 } else if (preference instanceof SwitchPreference) {
                     SharedPreferences.Editor ed = sPref.edit();
-                    if (preference.getSharedPreferences().getBoolean("key_checkbox", true)) {
-                        ed.putBoolean("key_checkbox", true);
+                    if (preference.getSharedPreferences().getBoolean("key_checkbox", false)) {
+                        ed.putString("key_checkbox", "true");
                     } else {
-                        ed.putBoolean("key_checkbox", false);
+                        ed.putString("key_checkbox", "false");
                     }
                     ed.apply();
                 }

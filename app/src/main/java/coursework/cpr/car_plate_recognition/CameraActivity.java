@@ -82,8 +82,8 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
                     int viewWidth = v.getWidth();
                     double x = convertor(event.getY(), 0, 0.95 * viewHeight, 0, camWidth);
                     double y = camHeight - convertor(event.getX(), 0, viewWidth, 0, camHeight);
-                    System.out.println("X=" + x);
-                    System.out.println("Y=" + y);
+                    Log.d("coords", "X = " + x);
+                    Log.d("coords", "Y = " + y);
                     if (plates == null)
                         return false;
                     Rect[] platesArray = plates.toArray();
@@ -91,6 +91,7 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
                         System.out.println(rect.x + "**" + rect.y + "**" + rect.width + "**" + rect.height);
                         if (rect.contains(new Point(x, y))) {
                             System.out.println("CONTAINS!!!");
+                            Toast.makeText(self, "Recognising", Toast.LENGTH_LONG).show();
                             Mat findRect = lastFrame.submat(rect);
 
                             File imageFileDebug = new File(imageDirDebug, "beforeImage.png");
@@ -102,15 +103,14 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
 
                             Pix pix = ReadFile.readFile(imageFile);
                             pix = Convert.convertTo8(pix);
-                            pix = Binarize.otsuAdaptiveThreshold(pix, pix.getWidth(), pix.getHeight(), 2, 1, 0.01f);
-                            //pix = Binarize.otsuAdaptiveThreshold(pix, pix.getWidth(), pix.getHeight(), (int) Math.floor(Float.parseFloat(loadData(getString(R.string.smoothX)))), (int) Math.floor(Float.parseFloat(loadData(getString(R.string.smoothY)))), Float.parseFloat((getString(R.string.scalefactor))));
+                            //pix = Binarize.otsuAdaptiveThreshold(pix, pix.getWidth(), pix.getHeight(), 2, 1, 0.01f);
+                            pix = Binarize.otsuAdaptiveThreshold(pix, pix.getWidth(), pix.getHeight(), (int) Math.floor(Float.parseFloat(loadData(getString(R.string.smoothX)))), (int) Math.floor(Float.parseFloat(loadData(getString(R.string.smoothY)))), Float.parseFloat(loadData(getString(R.string.scalefactor))));
                             imageFileDebug = new File(imageDirDebug, "binariesImage.png");
                             WriteFile.writeImpliedFormat(pix, imageFileDebug);
 
                             String result = OCR(pix).replaceAll("[/s]*", "");
                             System.out.println("Result recognition: " + result);
                             Log.i("Result recognition", result);
-                            System.out.println(loadData(getString(R.string.key_checkbox)));
                             if (Boolean.parseBoolean(loadData(getString(R.string.key_checkbox)))) {
                                 if (!result.isEmpty()) {
                                     Intent intent = new Intent(self, WebActivity.class);
@@ -173,7 +173,7 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
         StringBuilder stringBuilder = new StringBuilder();
 
         //Зонированная обработка
-        for (int i = height / 2; i < height; i++) {
+        for (int i = height / 2 - (int) (0.05 * height); i < height + (int) (0.05 * height); i++) {
             for (int j = 0; j < width; j++) {
                 if (!checkedPoint[i][j] && work.getPixel(j, i) == -1) {
                     checkedPoint[i][j] = true;
@@ -643,7 +643,8 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
 //        Log.i("test smoothx",(loadData(getString(R.string.smoothX))));
 //        Log.i("test smoothy",(loadData(getString(R.string.smoothY))));
 //        Log.i("test binarize",getString(R.string.binarizeFactor));
-//        Log.i("test", "123");
+//
+
         if (currentFrame >= maxFrame) {
             plates = new MatOfRect();
             Mat grayFrame = new Mat();
