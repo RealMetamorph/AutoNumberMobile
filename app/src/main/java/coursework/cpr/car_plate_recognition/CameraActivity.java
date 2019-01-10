@@ -11,13 +11,12 @@ import android.util.Log;
 import android.view.MotionEvent;
 import android.view.SurfaceView;
 import android.view.View;
-import android.widget.Button;
 import android.widget.Toast;
 
-import com.googlecode.leptonica.android.Binarize;
 import com.googlecode.leptonica.android.Box;
 import com.googlecode.leptonica.android.Clip;
 import com.googlecode.leptonica.android.Convert;
+import com.googlecode.leptonica.android.GrayQuant;
 import com.googlecode.leptonica.android.Pix;
 import com.googlecode.leptonica.android.ReadFile;
 import com.googlecode.leptonica.android.WriteFile;
@@ -44,20 +43,23 @@ import static coursework.cpr.car_plate_recognition.MainActivity.APP_PREFERENCES;
 public class CameraActivity extends AppCompatActivity implements CameraBridgeViewBase.CvCameraViewListener {
 
     private int absolutePlateSize;
-    private Button btnCapture;
     private CameraBridgeViewBase cameraBridgeViewBase;
     private TessBaseAPI tesseract;
     private MatOfRect plates;
     private Mat lastFrame;
+    private Point lastPoint;
     private int currentFrame;
     private int maxFrame = 3;
     private int camHeight;
     private int camWidth;
     private CameraActivity self;
     private File imageDirDebug;
+    private long timeout = 1000;
+    private long time;
+    //settings
     SharedPreferences sPref;
 
-    //Save to FILE
+    //Cascade
     private CascadeClassifier cascadeClassifier;
 
     @Override
@@ -69,6 +71,7 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
         imageDirDebug = new File(Environment.getExternalStorageDirectory(), "CarPlateRecognition");
         //noinspection ResultOfMethodCallIgnored
         imageDirDebug.mkdir();
+        time = 0;
         cameraBridgeViewBase = findViewById(R.id.camera2View);
         maxFrame = Math.round(Float.parseFloat(loadData(getString(R.string.frequency))));
         cameraBridgeViewBase.setVisibility(SurfaceView.VISIBLE);
@@ -80,18 +83,27 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
                 if (event.getActionButton() == MotionEvent.ACTION_DOWN) {
                     int viewHeight = v.getHeight();
                     int viewWidth = v.getWidth();
-                    double x = convertor(event.getY(), 0, 0.95 * viewHeight, 0, camWidth);
-                    double y = camHeight - convertor(event.getX(), 0, viewWidth, 0, camHeight);
-                    Log.d("coords", "X = " + x);
-                    Log.d("coords", "Y = " + y);
+                    System.out.println(viewHeight);
+                    System.out.println(viewWidth);
+                    System.out.println();
+                    double x = converter(event.getY(), 0, viewHeight, 0, camWidth);
+                    double y = camHeight - converter(event.getX(), 0, viewWidth, 0, 0.86 * camHeight);
+                    Log.d("Touch activate", "X = " + x);
+                    Log.d("Touch activate", "Y = " + y);
                     if (plates == null)
                         return false;
+                    lastPoint = new Point(x, y);
+                    if (time > 0) {
+                        time -= System.currentTimeMillis();
+                        Toast.makeText(self, "Подождите", Toast.LENGTH_LONG).show();
+                        return false;
+                    }
                     Rect[] platesArray = plates.toArray();
                     for (Rect rect : platesArray) {
-                        System.out.println(rect.x + "**" + rect.y + "**" + rect.width + "**" + rect.height);
-                        if (rect.contains(new Point(x, y))) {
-                            System.out.println("CONTAINS!!!");
-                            Toast.makeText(self, "Recognising", Toast.LENGTH_LONG).show();
+                        //System.out.println(rect.x + "**" + rect.y + "**" + rect.width + "**" + rect.height);
+                        if (rect.contains(lastPoint)) {
+                            Log.d("Check", "Containing x = " + x + ", y = " + y + ".");
+                            Toast.makeText(self, "Распознавание", Toast.LENGTH_LONG).show();
                             Mat findRect = lastFrame.submat(rect);
 
                             File imageFileDebug = new File(imageDirDebug, "beforeImage.png");
@@ -104,23 +116,25 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
                             Pix pix = ReadFile.readFile(imageFile);
                             pix = Convert.convertTo8(pix);
                             //pix = Binarize.otsuAdaptiveThreshold(pix, pix.getWidth(), pix.getHeight(), 2, 1, 0.01f);
-                            pix = Binarize.otsuAdaptiveThreshold(pix, pix.getWidth(), pix.getHeight(), (int) Math.floor(Float.parseFloat(loadData(getString(R.string.smoothX)))), (int) Math.floor(Float.parseFloat(loadData(getString(R.string.smoothY)))), Float.parseFloat(loadData(getString(R.string.scalefactor))));
+                            //pix = Binarize.otsuAdaptiveThreshold(pix, 32, 32, (int) Math.floor(Float.parseFloat(loadData(getString(R.string.smoothX)))), (int) Math.floor(Float.parseFloat(loadData(getString(R.string.smoothY)))), Float.parseFloat(loadData(getString(R.string.scalefactor))));
+                            pix = GrayQuant.pixThresholdToBinary(pix, Integer.parseInt(loadData(getString(R.string.grayThresh))));
+                            //pix = Binarize.sauvolaBinarizeTiled(pix);
                             imageFileDebug = new File(imageDirDebug, "binariesImage.png");
                             WriteFile.writeImpliedFormat(pix, imageFileDebug);
 
                             String result = OCR(pix).replaceAll("[/s]*", "");
-                            System.out.println("Result recognition: " + result);
-                            Log.i("Result recognition", result);
+                            Log.d("Final result: ", result);
                             if (Boolean.parseBoolean(loadData(getString(R.string.key_checkbox)))) {
                                 if (!result.isEmpty()) {
                                     Intent intent = new Intent(self, WebActivity.class);
                                     intent.putExtra("href", "https://avtocod.ru/proverkaavto/" + result + "?rd=GRZ");
                                     startActivity(intent);
                                 } else
-                                    Toast.makeText(self, "Nothing find", Toast.LENGTH_LONG).show();
+                                    Toast.makeText(self, "Ничего не найдено", Toast.LENGTH_LONG).show();
                             } else {
-                                Toast.makeText(self, result.isEmpty() ? "Nothing find" : ("Result recognition" + result), Toast.LENGTH_LONG).show();
+                                Toast.makeText(self, result.isEmpty() ? "Ничего не найдено" : ("Результат распознавания: " + result), Toast.LENGTH_LONG).show();
                             }
+                            time = timeout;
                         }
                     }
                 }
@@ -171,9 +185,8 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
         boolean[][] checkedPoint = new boolean[height][width];
 
         StringBuilder stringBuilder = new StringBuilder();
-
         //Зонированная обработка
-        for (int i = height / 2 - (int) (0.01 * height); i < height / 2 + (int) (0.01 * height); i++) {
+        for (int i = height / 2 - (int) (0.01 * height); i < height / 2 + (int) (0.01 * height) + 1; i++) {
             for (int j = 0; j < width; j++) {
                 if (!checkedPoint[i][j] && work.getPixel(j, i) == -1) {
                     checkedPoint[i][j] = true;
@@ -268,7 +281,7 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
                     int percent = (int) Math.round(((double) blackCount / (lenW * lenH)) * 100);
 
                     //Если это не угловой элемент, то проверить параметры соотношений, иначе просто стереть объект
-                    if ((len > 0 && lenPercent > 30 && lenPercent < 87 && percent > 20 && percent < 67)) {
+                    if ((len > 0 && lenPercent > 30 && lenPercent < 88 && percent > 20 && percent < 67)) {
                         boolean skip = false;
                         /*if (set) {
                             if ((double) maxX / (lenW - 1) > 1.6f)
@@ -282,10 +295,13 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
                             Pix cutPix = Clip.clipRectangle(origImage, new Box(minW, minH, lenW - 1, lenH - 1));
                             System.out.println("w=" + (lenW - 1) + ", h=" + (lenH - 1));
                             tesseract.setImage(cutPix);
-                            String res = tesseract.getUTF8Text();
+                            String res = tesseract.getUTF8Text().replace("C", "С").replace("E", "Е").replace("H", "Н");
+                            if (!res.isEmpty() && res.length() > 4)
+                                res = res.substring(0, 1) + res.substring(1, 4).replace("O", "0") + res.substring(4);
                             File imageFileDebug = new File(debugDir, "" + i + "x" + j + " == " + res + ".png");
                             WriteFile.writeImpliedFormat(cutPix, imageFileDebug);
                             System.out.println("RESULT: " + res);
+                            System.out.println("KEY: " + checkSymbol(res));
                             if (!checkSymbol(res).isEmpty()) {
                                 stringBuilder.append(res);
                             }
@@ -304,7 +320,10 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
                 }
             }
         }
-        return stringBuilder.toString().toUpperCase();
+        return stringBuilder.toString().
+
+                toUpperCase();
+
     }
 
     //чистка шумов на изображении, обрабатывает изображение и удаляет всё, что не похоже на символы и мешает распознавать номер.
@@ -591,14 +610,12 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
 
             // Initialise the TessAPIBase
             tesseract.init(tesserractDir.getAbsolutePath(), "ru");
-            //tesseract.setVariable("tessedit_char_whitelist", "acekopxyABCEHKMOPTXYD0123456789");
-            //tesseract.setVariable(TessBaseAPI.VAR_CHAR_WHITELIST, "ABCDEHKMoPTXy1234567890RUSrus");
         } catch (Exception e) {
             Log.e("OCR_Tess", "Error loading tessdata", e);
         }
     }
 
-    double convertor(double value, double fromA, double fromB, double toA, double toB) {
+    double converter(double value, double fromA, double fromB, double toA, double toB) {
         return (value - fromA) / (fromB - fromA) * (toB - toA) + toA;
     }
 
@@ -623,10 +640,8 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
     public void onCameraViewStarted(int width, int height) {
         camWidth = width;
         camHeight = height;
-        //int max = width > height ? width : height;
-        System.out.println(width);
-        System.out.println(height);
-//        cameraBridgeViewBase.setMaxFrameSize(max, max);
+        Log.d("Image size", "width = " + width);
+        Log.d("Image size", "height = " + height);
     }
 
     @Override
@@ -657,9 +672,8 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
                 }
             }
 
-            lastFrame = inputFrame;
-
-
+            lastFrame = new Mat();
+            inputFrame.copyTo(lastFrame);
             cascadeClassifier.detectMultiScale(grayFrame, plates, Float.parseFloat(loadData(getString(R.string.scalefactor))), (int) Math.floor(Float.parseFloat(loadData(getString(R.string.minNeighbors)))), Objdetect.CASCADE_SCALE_IMAGE, new org.opencv.core.Size(absolutePlateSize, absolutePlateSize));
             //cascadeClassifier.detectMultiScale(grayFrame, plates, 1.1, 6, Objdetect.CASCADE_SCALE_IMAGE, new org.opencv.core.Size(absolutePlateSize, absolutePlateSize));
             //Рисуем квадратики,ееей!
@@ -673,6 +687,9 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
                 Imgproc.rectangle(inputFrame, platesArray[i].tl()/*top-left*/, platesArray[i].br()/*bottom-right*/, new Scalar(229, 40, 64), 3); //new Scalar(229, 40, 64)
             currentFrame++;
         }
+        if (Boolean.parseBoolean(loadData(getString(R.string.debugMode))) && lastPoint != null)
+            Imgproc.circle(inputFrame, lastPoint, 3, new Scalar(200, 100, 64), 3);
+
 //        Mat something = new Mat(inputFrame.cols(), inputFrame.rows(), inputFrame.type());
 //        Core.flip(inputFrame,something, (int) (System.currentTimeMillis()/1000w)%10);
 //        //Imgproc.resize(something,something,inputFrame.size());

@@ -46,11 +46,9 @@ public class SettingsActivity extends AppCompatActivity {
             bindPreferenceSummaryToValue(findPreference(getString(R.string.scalefactor)));
             bindPreferenceSummaryToValue(findPreference(getString(R.string.frequency)));
             bindPreferenceSummaryToValue(findPreference(getString(R.string.minNeighbors)));
-            bindPreferenceSummaryToValue(findPreference(getString(R.string.smoothX)));
-            bindPreferenceSummaryToValue(findPreference(getString(R.string.smoothY)));
-            bindPreferenceSummaryToValue(findPreference(getString(R.string.binarizeFactor)));
+            bindPreferenceSummaryToValue(findPreference(getString(R.string.grayThresh)));
             bindPreferenceSummaryToValueBoolean(findPreference(getString(R.string.key_checkbox)));
-
+            bindPreferenceSummaryToValueBoolean(findPreference(getString(R.string.debugMode)));
 
         }
     }

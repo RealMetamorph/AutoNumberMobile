@@ -1,18 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
-<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:sample="http://schemas.android.com/apk/res-auto">
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
     <PreferenceCategory android:title="Основные параметры">
         <SwitchPreference
             android:defaultValue="true"
             android:key="@string/key_checkbox"
             android:summary="@string/summary_checkbox"
             android:title="@string/title_check" />
-    </PreferenceCategory>
+
     <EditTextPreference
         android:defaultValue="@string/frequencyDefaultValue"
         android:key="@string/frequency"
         android:summary="@string/frequencySummary"
         android:title="@string/frequencyTitle" />
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="Debug">
+
+        <SwitchPreference
+            android:defaultValue="false"
+            android:key="@string/debugMode"
+            android:summary="@string/debugModeSummary"
+            android:title="@string/debugModeTitle" />
+
+    </PreferenceCategory>
 
     <PreferenceCategory android:title="OpenCV">
 
@@ -32,20 +42,10 @@
     <PreferenceCategory android:title="Tesseract">
 
         <EditTextPreference
-            android:defaultValue="@string/smoothxDefaultValue"
-            android:key="@string/smoothX"
-            android:summary="@string/smoothxSummary"
-            android:title="@string/smoothxTitle" />
-        <EditTextPreference
-            android:defaultValue="@string/smoothyDefaultValue"
-            android:key="@string/smoothY"
-            android:summary="@string/smoothySummary"
-            android:title="@string/smoothyTitle" />
-        <EditTextPreference
-            android:defaultValue="@string/binarizeFactorDefaultValue"
-            android:key="@string/binarizeFactor"
-            android:summary="@string/binarizeFactorSummary"
-            android:title="@string/binarizeFactorTitle" />
+            android:defaultValue="@string/grayThreshDefaultValue"
+            android:key="@string/grayThresh"
+            android:summary="@string/grayThreshSummary"
+            android:title="@string/grayThreshTitle" />
 
 
     </PreferenceCategory>

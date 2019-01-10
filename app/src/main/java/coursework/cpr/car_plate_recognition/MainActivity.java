@@ -11,7 +11,6 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
@@ -27,7 +26,6 @@ public class MainActivity extends AppCompatActivity {
         System.loadLibrary("tess");
     }
     public static final String APP_PREFERENCES = "settings";
-    private Button button;
     private CardView start;
     private CardView info;
     SharedPreferences sPref;
@@ -36,14 +34,12 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         sPref = getSharedPreferences(APP_PREFERENCES, Context.MODE_PRIVATE);
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
         saveData(getString(R.string.scalefactor), getString(R.string.scalefactorDefaultValue));
         saveData(getString(R.string.frequency), getString(R.string.frequencyDefaultValue));
-        saveData(getString(R.string.smoothY), getString(R.string.smoothyDefaultValue));
-        saveData(getString(R.string.smoothX), getString(R.string.smoothxDefaultValue));
-        saveData(getString(R.string.binarizeFactor), getString(R.string.binarizeFactorDefaultValue));
+        saveData(getString(R.string.grayThresh), getString(R.string.grayThreshDefaultValue));
         saveData(getString(R.string.minNeighbors), getString(R.string.minNeighborsDefaultValue));
 
 
@@ -102,17 +98,14 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void startWebActivity() {
-        Intent intent = new Intent(this, WebActivity.class);
-        intent.putExtra("carNumber", "M052ET63");
-        startActivity(intent);
+        //Intent intent = new Intent(this, WebActivity.class);
+        //startActivity(intent);
     }
 
     void saveData(String data, String etText) {
         SharedPreferences.Editor ed = sPref.edit();
         ed.putString(data, etText);
         ed.apply();
-        //   Toast.makeText(this, "Data saved", Toast.LENGTH_SHORT).show();
-
     }
 
     void loadData(String data, EditText etText) {
