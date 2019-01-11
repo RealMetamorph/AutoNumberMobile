@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/AutoSeekerMobile.iml" filepath="$PROJECT_DIR$/AutoSeekerMobile.iml" />
+      <module fileurl="file://$PROJECT_DIR$/AutoNumberMobile.iml" filepath="$PROJECT_DIR$/AutoNumberMobile.iml" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
       <module fileurl="file://$PROJECT_DIR$/opencv/opencv.iml" filepath="$PROJECT_DIR$/opencv/opencv.iml" />
       <module fileurl="file://$PROJECT_DIR$/tess-two/tess-two.iml" filepath="$PROJECT_DIR$/tess-two/tess-two.iml" />

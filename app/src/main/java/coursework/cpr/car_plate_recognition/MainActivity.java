@@ -3,6 +3,7 @@ package coursework.cpr.car_plate_recognition;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.CardView;
@@ -16,6 +17,8 @@ import android.widget.Toast;
 
 import org.opencv.android.OpenCVLoader;
 
+import java.net.URI;
+
 public class MainActivity extends AppCompatActivity {
 
 
@@ -25,10 +28,12 @@ public class MainActivity extends AppCompatActivity {
         System.loadLibrary("opencv_java3");
         System.loadLibrary("tess");
     }
+
     public static final String APP_PREFERENCES = "settings";
     private CardView start;
     private CardView info;
     SharedPreferences sPref;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -50,8 +55,8 @@ public class MainActivity extends AppCompatActivity {
         }
 
 
-      //  TextView tv = (TextView) findViewById(R.id.sample_text);
-      //  tv.setText(stringFromJNI());
+        //  TextView tv = (TextView) findViewById(R.id.sample_text);
+        //  tv.setText(stringFromJNI());
         start = findViewById(R.id.start);
         start.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -67,7 +72,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        }
+    }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -98,8 +103,9 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void startWebActivity() {
-        //Intent intent = new Intent(this, WebActivity.class);
-        //startActivity(intent);
+        Intent intent = new Intent(Intent.ACTION_VIEW);
+        intent.setData(Uri.parse("https://github.com/RealMetamorph/AutoNumberMobile"));
+        startActivity(intent);
     }
 
     void saveData(String data, String etText) {
@@ -108,18 +114,11 @@ public class MainActivity extends AppCompatActivity {
         ed.apply();
     }
 
-    void loadData(String data, EditText etText) {
-        String savedText = sPref.getString(data, "");
-        etText.setText(savedText);
-        Toast.makeText(this, "Data loaded", Toast.LENGTH_SHORT).show();
-    }
-
     /**
      * A native method that is implemented by the 'native-lib' native library,
      * which is packaged with this application.
      */
     public native String stringFromJNI();
-
 
 
 }

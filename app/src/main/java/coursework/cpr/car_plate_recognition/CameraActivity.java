@@ -107,7 +107,8 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
                             Mat findRect = lastFrame.submat(rect);
 
                             File imageFileDebug = new File(imageDirDebug, "beforeImage.png");
-                            Imgcodecs.imwrite(imageFileDebug.getAbsolutePath(), findRect);
+                            if (Boolean.parseBoolean(loadData(getString(R.string.debugMode))))
+                                Imgcodecs.imwrite(imageFileDebug.getAbsolutePath(), findRect);
 
                             File imageDir = getDir("imageToOCR", Context.MODE_PRIVATE);
                             File imageFile = new File(imageDir, "image.png");
@@ -120,7 +121,8 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
                             pix = GrayQuant.pixThresholdToBinary(pix, Integer.parseInt(loadData(getString(R.string.grayThresh))));
                             //pix = Binarize.sauvolaBinarizeTiled(pix);
                             imageFileDebug = new File(imageDirDebug, "binariesImage.png");
-                            WriteFile.writeImpliedFormat(pix, imageFileDebug);
+                            if (Boolean.parseBoolean(loadData(getString(R.string.debugMode))))
+                                WriteFile.writeImpliedFormat(pix, imageFileDebug);
 
                             String result = OCR(pix).replaceAll("[/s]*", "");
                             Log.d("Final result: ", result);
@@ -171,8 +173,9 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
 
         Pix work = origImage.clone();
         File debugDir = new File(imageDirDebug, "" + origImage.getHeight() + "X" + origImage.getWidth());
-        //noinspection ResultOfMethodCallIgnored
-        debugDir.mkdir();
+        if (Boolean.parseBoolean(loadData(getString(R.string.debugMode))))
+            //noinspection ResultOfMethodCallIgnored
+            debugDir.mkdir();
 
         int width = work.getWidth();
         int height = work.getHeight();
@@ -299,7 +302,8 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
                             if (!res.isEmpty() && res.length() > 4)
                                 res = res.substring(0, 1) + res.substring(1, 4).replace("O", "0") + res.substring(4);
                             File imageFileDebug = new File(debugDir, "" + i + "x" + j + " == " + res + ".png");
-                            WriteFile.writeImpliedFormat(cutPix, imageFileDebug);
+                            if (Boolean.parseBoolean(loadData(getString(R.string.debugMode))))
+                                WriteFile.writeImpliedFormat(cutPix, imageFileDebug);
                             System.out.println("RESULT: " + res);
                             System.out.println("KEY: " + checkSymbol(res));
                             if (!checkSymbol(res).isEmpty()) {
