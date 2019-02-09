@@ -130,6 +130,7 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
                                 if (!result.isEmpty()) {
                                     Intent intent = new Intent(self, WebActivity.class);
                                     intent.putExtra("href", "https://avtocod.ru/proverkaavto/" + result + "?rd=GRZ");
+                                    intent.putExtra("number", result);
                                     startActivity(intent);
                                 } else
                                     Toast.makeText(self, "Ничего не найдено", Toast.LENGTH_LONG).show();

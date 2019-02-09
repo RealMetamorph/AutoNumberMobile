@@ -6,8 +6,8 @@ android {
         applicationId "coursework.cpr.car_plate_recognition"
         minSdkVersion 23
         targetSdkVersion 28
-        versionCode 24
-        versionName "1.5"
+        versionCode 28
+        versionName "1.6"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         externalNativeBuild {
             cmake {
