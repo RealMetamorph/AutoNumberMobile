@@ -6,18 +6,14 @@ import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.CardView;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.EditText;
-import android.widget.Toast;
+import android.widget.Button;
 
 import org.opencv.android.OpenCVLoader;
-
-import java.net.URI;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -30,8 +26,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public static final String APP_PREFERENCES = "settings";
-    private CardView start;
-    private CardView info;
+    private Button start;
+    private Button info;
     SharedPreferences sPref;
 
     @Override

@@ -4,7 +4,7 @@ android {
     compileSdkVersion 28
     defaultConfig {
         applicationId "coursework.cpr.car_plate_recognition"
-        minSdkVersion 23
+        minSdkVersion 18
         targetSdkVersion 28
         versionCode 28
         versionName "1.6"
