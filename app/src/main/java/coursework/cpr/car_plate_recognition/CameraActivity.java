@@ -100,7 +100,6 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
                     }
                     Rect[] platesArray = plates.toArray();
                     for (Rect rect : platesArray) {
-                        //System.out.println(rect.x + "**" + rect.y + "**" + rect.width + "**" + rect.height);
                         if (rect.contains(lastPoint)) {
                             Log.d("Check", "Containing x = " + x + ", y = " + y + ".");
                             Toast.makeText(self, "Распознавание", Toast.LENGTH_LONG).show();
@@ -116,10 +115,7 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
 
                             Pix pix = ReadFile.readFile(imageFile);
                             pix = Convert.convertTo8(pix);
-                            //pix = Binarize.otsuAdaptiveThreshold(pix, pix.getWidth(), pix.getHeight(), 2, 1, 0.01f);
-                            //pix = Binarize.otsuAdaptiveThreshold(pix, 32, 32, (int) Math.floor(Float.parseFloat(loadData(getString(R.string.smoothX)))), (int) Math.floor(Float.parseFloat(loadData(getString(R.string.smoothY)))), Float.parseFloat(loadData(getString(R.string.scalefactor))));
                             pix = GrayQuant.pixThresholdToBinary(pix, Integer.parseInt(loadData(getString(R.string.grayThresh))));
-                            //pix = Binarize.sauvolaBinarizeTiled(pix);
                             imageFileDebug = new File(imageDirDebug, "binariesImage.png");
                             if (Boolean.parseBoolean(loadData(getString(R.string.debugMode))))
                                 WriteFile.writeImpliedFormat(pix, imageFileDebug);
@@ -144,7 +140,6 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
                 return true;
             }
         });
-        //cameraBridgeViewBase.setRotation(180);
         tesseract = new TessBaseAPI();
         initializeOpenCVDependencies();
         initializeTessAPIBase();
@@ -656,15 +651,6 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
 
     @Override
     public Mat onCameraFrame(Mat inputFrame) {
-
-//        Log.i("test scale", (loadData(getString(R.string.scalefactor))));
-//        Log.i("test frequency", (loadData(getString(R.string.frequency))));
-//        Log.i("test minNeighbors",(loadData(getString(R.string.minNeighbors))));
-//        Log.i("test smoothx",(loadData(getString(R.string.smoothX))));
-//        Log.i("test smoothy",(loadData(getString(R.string.smoothY))));
-//        Log.i("test binarize",getString(R.string.binarizeFactor));
-//
-
         if (currentFrame >= maxFrame) {
             plates = new MatOfRect();
             Mat grayFrame = new Mat();
@@ -694,22 +680,6 @@ public class CameraActivity extends AppCompatActivity implements CameraBridgeVie
         }
         if (Boolean.parseBoolean(loadData(getString(R.string.debugMode))) && lastPoint != null)
             Imgproc.circle(inputFrame, lastPoint, 3, new Scalar(200, 100, 64), 3);
-
-//        Mat something = new Mat(inputFrame.cols(), inputFrame.rows(), inputFrame.type());
-//        Core.flip(inputFrame,something, (int) (System.currentTimeMillis()/1000w)%10);
-//        //Imgproc.resize(something,something,inputFrame.size());
-        //Mat dest = inputFrame.clone();
-//        System.out.println(inputFrame.rows());
-//        Mat dest = inputFrame.clone();
-//        dest.reshape(inputFrame.rows(), inputFrame.cols());
-//        System.out.println(dest.rows());
-//        Point center = new Point(dest.cols() / 2, dest.rows() / 2);
-//        Mat rot = Imgproc.getRotationMatrix2D(center, -90, 1);
-//        Imgproc.warpAffine(inputFrame, dest, rot, dest.size());
-
-        //Core.flip(inputFrame.t(), dest, 1);
         return inputFrame;//something;
     }
-    //  public native String stringFromJNI();
-
 }

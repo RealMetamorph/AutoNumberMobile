@@ -130,9 +130,6 @@ public class SettingsActivity extends AppCompatActivity {
                 } else if (preference instanceof EditTextPreference) {
                     preference.setSummary(stringValue);
                     saveData(preference.getKey(), stringValue);
-                    // Log.i("settings",preference.getKey());
-
-
                     //  String savedText = sPref.getString(preference.getKey(), "");
                     //toast(savedText);
 
